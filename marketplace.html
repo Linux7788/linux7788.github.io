@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Browse · iLiNuX Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="marketplace-style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="mkt-header">
+    <a class="mkt-brand" href="marketplace.html"><span class="mark">iL</span> iLiNuX Market</a>
+    <nav class="mkt-nav" id="nav-area">
+      <a href="sell.html">Sell</a>
+      <a href="auth.html" id="auth-link">Sign in</a>
+    </nav>
+  </header>
+
+  <main class="mkt-main">
+    <div class="mkt-heading">
+      <p class="eyebrow-mkt"><span></span> Marketplace</p>
+      <h1>Genuine parts, verified sellers.</h1>
+      <p>iCloud-unlocked screens, boards, and devices from iLiNuX and approved sellers across Ghana.</p>
+    </div>
+
+    <div class="filter-row">
+      <input type="text" class="search-input" id="search-input" placeholder="Search listings…">
+      <button class="filter-chip active" data-cat="all">All</button>
+      <button class="filter-chip" data-cat="screens">Screens</button>
+      <button class="filter-chip" data-cat="boards">Boards</button>
+      <button class="filter-chip" data-cat="devices">Devices</button>
+      <button class="filter-chip" data-cat="accessories">Accessories</button>
+      <button class="filter-chip" data-cat="other">Other</button>
+    </div>
+
+    <div class="product-grid" id="grid">
+      <div class="empty-state">Loading listings…</div>
+    </div>
+  </main>
+
+  <script src="supabase-config.js"></script>
+  <script>
+    let allListings = [];
+    let activeCat = 'all';
+
+    const iconMap = { screens: '▣', boards: '⌘', devices: '◈', accessories: '◇', other: '●' };
+
+    async function initNav() {
+      const user = await getCurrentUser();
+      const navArea = document.getElementById('nav-area');
+      if (user) {
+        navArea.innerHTML = `
+          <a href="sell.html">Sell</a>
+          <a href="dashboard.html">My listings</a>
+          <a href="#" id="logout-link">Sign out</a>
+        `;
+        document.getElementById('logout-link').addEventListener('click', async (e) => {
+          e.preventDefault();
+          await supabaseClient.auth.signOut();
+          window.location.reload();
+        });
+      }
+    }
+
+    async function loadListings() {
+      const { data, error } = await supabaseClient
+        .from('listings')
+        .select('*, profiles(full_name)')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        document.getElementById('grid').innerHTML =
+          '<div class="empty-state">Could not load listings. Try again shortly.</div>';
+        console.error(error);
+        return;
+      }
+      allListings = data || [];
+      renderGrid();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('grid');
+      const query = document.getElementById('search-input').value.trim().toLowerCase();
+
+      const filtered = allListings.filter(item => {
+        const matchesCat = activeCat === 'all' || item.category === activeCat;
+        const matchesQuery = !query || item.title.toLowerCase().includes(query);
+        return matchesCat && matchesQuery;
+      });
+
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="empty-state">No listings match yet. Check back soon, or be the first to sell one.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => `
+        <a class="product-card" href="listing.html?id=${item.id}">
+          <div class="product-thumb">${iconMap[item.category] || '●'}</div>
+          <div class="product-body">
+            <div class="product-cat">${item.category}</div>
+            <div class="product-title">${escapeHtml(item.title)}</div>
+            <div class="product-price">${formatCedis(item.price)}</div>
+            <div class="product-seller">Sold by ${escapeHtml(item.profiles?.full_name || 'iLiNuX seller')}</div>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeCat = chip.dataset.cat;
+        renderGrid();
+      });
+    });
+
+    document.getElementById('search-input').addEventListener('input', renderGrid);
+
+    initNav();
+    loadListings();
+  </script>
+</body>
+</html>

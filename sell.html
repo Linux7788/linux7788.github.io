@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sell on iLiNuX Market</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="marketplace-style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="mkt-header">
+    <a class="mkt-brand" href="marketplace.html"><span class="mark">iL</span> iLiNuX Market</a>
+    <nav class="mkt-nav">
+      <a href="marketplace.html">Browse</a>
+      <a href="dashboard.html">My listings</a>
+    </nav>
+  </header>
+
+  <main class="mkt-main">
+    <div class="mkt-form" id="pending-notice" style="display:none;">
+      <p class="eyebrow-mkt"><span></span> Seller status</p>
+      <h1>Your seller request is pending</h1>
+      <p class="sub">iLiNuX reviews new sellers before they can list. This usually doesn't take long — check back soon.</p>
+    </div>
+
+    <div class="mkt-form" id="sell-form-wrap" style="display:none;">
+      <p class="eyebrow-mkt"><span></span> New listing</p>
+      <h1>List an item for sale</h1>
+      <p class="sub">New listings go live after a quick review by iLiNuX.</p>
+
+      <div class="form-error" id="error-box"></div>
+
+      <form id="listing-form">
+        <div class="field">
+          <label for="title">Item title</label>
+          <input type="text" id="title" required placeholder="e.g. iPhone 12 Screen (iCloud-unlocked)">
+        </div>
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category" required>
+            <option value="screens">Screens</option>
+            <option value="boards">Boards</option>
+            <option value="devices">Devices</option>
+            <option value="accessories">Accessories</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="price">Price (GH₵)</label>
+          <input type="number" id="price" required min="1" step="0.01" placeholder="e.g. 350">
+        </div>
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" required placeholder="Condition, model compatibility, proof of ownership notes, etc."></textarea>
+        </div>
+        <button type="submit" class="btn-primary" id="submit-btn">Submit for review</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="supabase-config.js"></script>
+  <script>
+    (async () => {
+      const user = await requireLogin('auth.html');
+      if (!user) return;
+
+      let profile = await getMyProfile();
+
+      // First time here: request seller status if not already a seller
+      if (profile && profile.seller_status === 'none') {
+        await supabaseClient
+          .from('profiles')
+          .update({ seller_status: 'pending' })
+          .eq('id', user.id);
+        profile.seller_status = 'pending';
+      }
+
+      if (profile && profile.seller_status === 'approved') {
+        document.getElementById('sell-form-wrap').style.display = 'block';
+      } else {
+        document.getElementById('pending-notice').style.display = 'block';
+      }
+    })();
+
+    const form = document.getElementById('listing-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errorBox = document.getElementById('error-box');
+        const submitBtn = document.getElementById('submit-btn');
+        errorBox.classList.remove('show');
+        submitBtn.disabled = true;
+
+        try {
+          const user = await getCurrentUser();
+          const { error } = await supabaseClient.from('listings').insert({
+            seller_id: user.id,
+            title: document.getElementById('title').value.trim(),
+            category: document.getElementById('category').value,
+            price: parseFloat(document.getElementById('price').value),
+            description: document.getElementById('description').value.trim(),
+            status: 'pending'
+          });
+          if (error) throw error;
+          showToast('Listing submitted for review!');
+          form.reset();
+          setTimeout(() => window.location.href = 'dashboard.html', 1200);
+        } catch (err) {
+          errorBox.textContent = err.message || 'Could not submit listing.';
+          errorBox.classList.add('show');
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

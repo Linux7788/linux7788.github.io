@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin · iLiNuX Market</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="marketplace-style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="mkt-header">
+    <a class="mkt-brand" href="marketplace.html"><span class="mark">iL</span> iLiNuX Market</a>
+    <nav class="mkt-nav"><a href="marketplace.html">Browse</a></nav>
+  </header>
+
+  <main class="mkt-main">
+    <div id="gate" class="mkt-form" style="max-width:420px;">
+      <p>Checking access…</p>
+    </div>
+
+    <div id="admin-content" style="display:none;">
+      <div class="mkt-heading">
+        <p class="eyebrow-mkt"><span></span> Admin</p>
+        <h1>Pending sellers</h1>
+      </div>
+      <div id="pending-sellers"></div>
+
+      <div class="mkt-heading" style="margin-top:40px;">
+        <h1>Pending listings</h1>
+      </div>
+      <div id="pending-listings"></div>
+    </div>
+  </main>
+
+  <script src="supabase-config.js"></script>
+  <script>
+    (async () => {
+      const user = await requireLogin('auth.html');
+      if (!user) return;
+
+      const profile = await getMyProfile();
+      const gate = document.getElementById('gate');
+
+      // Only allow access if this profile's role is 'admin'
+      // Set this manually in Supabase: update profiles set role='admin' where id='YOUR_USER_ID'
+      if (!profile || profile.role !== 'admin') {
+        gate.innerHTML = '<p>You don\'t have access to this page.</p>';
+        return;
+      }
+
+      gate.style.display = 'none';
+      document.getElementById('admin-content').style.display = 'block';
+      loadPendingSellers();
+      loadPendingListings();
+    })();
+
+    async function loadPendingSellers() {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('seller_status', 'pending');
+
+      const el = document.getElementById('pending-sellers');
+      if (error || !data.length) {
+        el.innerHTML = '<div class="empty-state">No sellers waiting for approval.</div>';
+        return;
+      }
+
+      el.innerHTML = data.map(p => `
+        <div class="listing-row">
+          <div class="info">
+            <span class="name">${p.full_name || 'Unnamed'}</span>
+            <span class="meta">${p.phone || 'No phone on file'}</span>
+          </div>
+          <div>
+            <button class="filter-chip" onclick="setSellerStatus('${p.id}', 'approved')">Approve</button>
+            <button class="filter-chip" onclick="setSellerStatus('${p.id}', 'rejected')">Reject</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function setSellerStatus(id, status) {
+      const { error } = await supabaseClient.from('profiles').update({ seller_status: status }).eq('id', id);
+      if (error) { showToast('Failed to update seller.', true); return; }
+      showToast('Seller ' + status + '.');
+      loadPendingSellers();
+    }
+
+    async function loadPendingListings() {
+      const { data, error } = await supabaseClient
+        .from('listings')
+        .select('*, profiles(full_name)')
+        .eq('status', 'pending');
+
+      const el = document.getElementById('pending-listings');
+      if (error || !data.length) {
+        el.innerHTML = '<div class="empty-state">No listings waiting for approval.</div>';
+        return;
+      }
+
+      el.innerHTML = data.map(item => `
+        <div class="listing-row">
+          <div class="info">
+            <span class="name">${item.title}</span>
+            <span class="meta">${formatCedis(item.price)} · ${item.category} · by ${item.profiles?.full_name || 'Unknown'}</span>
+          </div>
+          <div>
+            <button class="filter-chip" onclick="setListingStatus('${item.id}', 'approved')">Approve</button>
+            <button class="filter-chip" onclick="setListingStatus('${item.id}', 'rejected')">Reject</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function setListingStatus(id, status) {
+      const { error } = await supabaseClient.from('listings').update({ status }).eq('id', id);
+      if (error) { showToast('Failed to update listing.', true); return; }
+      showToast('Listing ' + status + '.');
+      loadPendingListings();
+    }
+  </script>
+</body>
+</html>
