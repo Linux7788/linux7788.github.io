@@ -23,17 +23,17 @@ button{cursor:pointer;background:none;border:none}
 :focus-visible{outline:2px solid var(--green);outline-offset:2px}
 
 .bar{position:sticky;top:0;z-index:60;background:rgba(10,12,11,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.bar-in{max-width:1180px;margin:0 auto;padding:0 18px;height:58px;display:flex;align-items:center;gap:22px}
+.bar-in{max-width:1180px;margin:0 auto;padding:0 18px;min-height:58px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .mark{font-family:var(--disp);font-weight:800;font-size:22px;display:flex;align-items:center;gap:7px;white-space:nowrap}
 .mark i{width:9px;height:9px;background:var(--green);border-radius:2px;display:block;box-shadow:0 0 10px var(--green);font-style:normal}
 .mark span{color:var(--green)}
-.nav{display:flex;gap:4px;margin-left:auto;align-items:center}
+.nav{display:flex;gap:4px;margin-left:auto;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0}
 .nav button{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:8px 11px;border-radius:5px}
 .nav button:hover{color:var(--text);background:var(--panel-2)}
 .nav button[aria-current="true"]{color:var(--green);background:rgba(57,230,107,.08)}
 .nav button[hidden]{display:none}
-.cartbtn{position:relative}
-.cartbtn b{position:absolute;top:1px;right:1px;background:var(--green);color:#04120A;font-family:var(--mono);font-size:9.5px;min-width:15px;height:15px;border-radius:8px;display:grid;place-items:center;padding:0 3px}
+.cartbtn{position:relative;padding-right:26px!important}
+.cartbtn b{position:absolute;top:50%;transform:translateY(-50%);right:2px;background:var(--green);color:#04120A;font-family:var(--mono);font-size:9.5px;min-width:15px;height:15px;border-radius:8px;display:grid;place-items:center;padding:0 3px}
 
 .wrap{max-width:1180px;margin:0 auto;padding:0 18px}
 .view{display:none;padding:30px 0 80px}
@@ -182,7 +182,8 @@ footer .fin span{font-family:var(--mono);font-size:11px}
   .lrow .price{grid-column:2/3;text-align:right}
   .lrow .acell{grid-column:1/-1;margin-top:4px}
   .grid2{grid-template-columns:1fr}
-  .nav button{padding:8px 7px;font-size:10.5px}
+  .nav button{padding:8px 6px;font-size:10px;letter-spacing:.04em}
+  .cartbtn{padding-right:24px!important}
   .mark{font-size:19px}
 }
 </style>
