@@ -362,11 +362,13 @@ function showAuth(mode='in'){
       <div class="field"><label for="aPhone">Phone</label><input id="aPhone" inputmode="tel" placeholder="024 000 0000"></div>` : ''}
     <div class="field"><label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="email"></div>
     <div class="field"><label for="aPass">Password</label><input id="aPass" type="password" autocomplete="${mode==='up'?'new-password':'current-password'}"></div>
-    <p class="hint">${mode==='up' ? 'You will get a confirmation email before you can sign in.' : ''}</p>`;
+    ${mode==='in' ? `<button id="aForgot" style="color:var(--green);font-size:13px;padding:0">Forgot your password?</button>` : ''}
+    <p class="hint">${mode==='up' ? 'We will email you a link to confirm your address before you can sign in.' : ''}</p>`;
   $('#dFoot').innerHTML = `
     <button class="btn" id="aGo">${mode==='in'?'Sign in':'Create account'}</button>
     <button class="btn ghost" id="aSwap" style="width:100%;margin-top:8px">${mode==='in'?'No account yet? Sign up':'Already registered? Sign in'}</button>`;
   $('#aSwap').onclick = () => showAuth(mode==='in'?'up':'in');
+  if($('#aForgot')) $('#aForgot').onclick = () => showReset($('#aEmail').value.trim());
   $('#aGo').onclick = async e => {
     const label = e.target.textContent;
     try{
@@ -375,11 +377,73 @@ function showAuth(mode='in'){
         await Auth.signIn($('#aEmail').value.trim(), $('#aPass').value);
         closeDrawer(); await boot(); toast('Signed in');
       }else{
-        await Auth.signUp($('#aEmail').value.trim(), $('#aPass').value, $('#aName').value.trim(), $('#aPhone').value.trim());
-        closeDrawer(); toast('Check your email to confirm, then sign in');
+        const em = $('#aEmail').value.trim();
+        await Auth.signUp(em, $('#aPass').value, $('#aName').value.trim(), $('#aPhone').value.trim());
+        showCheckEmail(em);
       }
     }catch(err){ toast(err.message, true); }
     finally{ busy(e.target,false,label); }
+  };
+  openDrawer();
+}
+
+function showCheckEmail(email){
+  $('#dTitle').textContent = 'Check your email';
+  $('#dBody').innerHTML = `<div class="paid"><div class="ring">\u2709</div><h3>Almost there</h3>
+    <code>${esc(email)}</code>
+    <p>We sent a confirmation link to that address. Open it, then come back and sign in.</p>
+    <p style="margin-top:10px">Nothing after a few minutes? Check your spam folder.</p></div>`;
+  $('#dFoot').innerHTML = `<button class="btn ghost" id="aResend" style="width:100%">Send it again</button>
+    <button class="btn" id="aBackIn" style="width:100%;margin-top:8px">Back to sign in</button>`;
+  $('#aBackIn').onclick = () => showAuth('in');
+  $('#aResend').onclick = async e => {
+    try{ busy(e.target,true); await Auth.resendConfirmation(email); toast('Sent again \u2014 check your inbox'); }
+    catch(err){ toast(err.message, true); } finally{ busy(e.target,false,'Send it again'); }
+  };
+  openDrawer();
+}
+
+function showReset(prefill){
+  $('#dTitle').textContent = 'Reset password';
+  $('#dBody').innerHTML = `<p class="hint" style="margin-bottom:14px">Enter the email you signed up with. We will send you a link to set a new password.</p>
+    <div class="field"><label for="rEmail">Email</label><input id="rEmail" type="email" autocomplete="email" value="${esc(prefill||'')}"></div>`;
+  $('#dFoot').innerHTML = `<button class="btn" id="rGo">Send reset link</button>
+    <button class="btn ghost" id="rBack" style="width:100%;margin-top:8px">Back to sign in</button>`;
+  $('#rBack').onclick = () => showAuth('in');
+  $('#rGo').onclick = async e => {
+    const em = $('#rEmail').value.trim();
+    if(!em.includes('@')) return toast('Enter a valid email', true);
+    try{
+      busy(e.target,true);
+      await Auth.requestPasswordReset(em);
+      $('#dTitle').textContent = 'Check your email';
+      $('#dBody').innerHTML = `<div class="paid"><div class="ring">\u2709</div><h3>Link sent</h3>
+        <code>${esc(em)}</code><p>Open the link in that email and you can set a new password.</p>
+        <p style="margin-top:10px">If no email arrives, that address may not have an account.</p></div>`;
+      $('#dFoot').innerHTML = `<button class="btn ghost" id="rDone" style="width:100%">Done</button>`;
+      $('#rDone').onclick = closeDrawer;
+    }catch(err){ toast(err.message, true); busy(e.target,false,'Send reset link'); }
+  };
+  openDrawer();
+}
+
+function showNewPassword(){
+  $('#dTitle').textContent = 'Set a new password';
+  $('#dBody').innerHTML = `<p class="hint" style="margin-bottom:14px">Choose a new password. At least 8 characters.</p>
+    <div class="field"><label for="nPass">New password</label><input id="nPass" type="password" autocomplete="new-password"></div>
+    <div class="field"><label for="nPass2">Type it again</label><input id="nPass2" type="password" autocomplete="new-password"></div>`;
+  $('#dFoot').innerHTML = `<button class="btn" id="nGo">Save new password</button>`;
+  $('#nGo').onclick = async e => {
+    const a1 = $('#nPass').value, b1 = $('#nPass2').value;
+    if(a1 !== b1) return toast('The two passwords do not match', true);
+    try{
+      busy(e.target,true);
+      await Auth.setNewPassword(a1);
+      closeDrawer();
+      history.replaceState(null,'',window.location.pathname);
+      await boot();
+      toast('Password changed \u2014 you are signed in');
+    }catch(err){ toast(err.message, true); busy(e.target,false,'Save new password'); }
   };
   openDrawer();
 }
@@ -766,6 +830,9 @@ async function decide(btn, fn, msg){
 /* ---------- boot ---------- */
 async function boot(){
   try{ ME = await Auth.me(); }catch(_){ ME = null; }
+  if(/type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search)){
+    setTimeout(showNewPassword, 300);
+  }
   $('#authBtn').textContent = ME ? 'Sign out' : 'Sign in';
   $('#navOrders').hidden = !ME;
   $('#navAdmin').hidden  = !(ME?.profile?.is_admin);

@@ -33,6 +33,22 @@ const Auth = {
     return data.user;
   },
   async signOut(){ await db.auth.signOut(); },
+  async requestPasswordReset(email){
+    const {error} = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if(error) throw error;
+  },
+  async setNewPassword(newPassword){
+    if(!newPassword || newPassword.length < 8)
+      throw new Error('Password must be at least 8 characters.');
+    const {error} = await db.auth.updateUser({password: newPassword});
+    if(error) throw error;
+  },
+  async resendConfirmation(email){
+    const {error} = await db.auth.resend({type:'signup', email});
+    if(error) throw error;
+  },
   async me(){
     const {data:{user}} = await db.auth.getUser();
     if(!user) return null;
