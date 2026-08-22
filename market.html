@@ -2,864 +2,2774 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>iLinux — Parts Marketplace, Accra</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07100b">
+<meta name="description" content="iLiNuX Marketplace — verified mobile phone parts and repair stock in Ghana.">
+<title>iLiNuX — Mobile Parts Marketplace</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
 <style>
 :root{
-  --ink:#0A0C0B; --panel:#121613; --panel-2:#171C18; --line:#232B25;
-  --green:#39E66B; --green-dim:#1E7A3C; --amber:#E8A33D; --red:#E2564B;
-  --text:#E6ECE7; --dim:#7C8A80;
-  --mono:'JetBrains Mono',ui-monospace,monospace;
-  --disp:'Saira Condensed',system-ui,sans-serif;
-  --body:'Archivo',system-ui,sans-serif;
+  --ink:#080b09;
+  --panel:#111612;
+  --panel2:#171d19;
+  --line:#263029;
+  --green:#39e66b;
+  --green2:#1e7a3c;
+  --amber:#e8a33d;
+  --red:#e2564b;
+  --text:#e8eee9;
+  --dim:#829087;
+  --mono:'JetBrains Mono',monospace;
+  --disp:'Saira Condensed',sans-serif;
+  --body:'Archivo',sans-serif;
 }
+
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--ink);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
-button{cursor:pointer;background:none;border:none}
+
+html{scroll-behavior:smooth}
+
+body{
+  background:
+    radial-gradient(circle at 80% 0%,rgba(57,230,107,.10),transparent 30rem),
+    radial-gradient(circle at 10% 20%,rgba(57,230,107,.04),transparent 25rem),
+    var(--ink);
+  color:var(--text);
+  font-family:var(--body);
+  font-size:15px;
+  line-height:1.5;
+  min-height:100vh;
+}
+
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  opacity:.18;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:36px 36px;
+}
+
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+button:disabled{opacity:.45;cursor:wait}
 :focus-visible{outline:2px solid var(--green);outline-offset:2px}
 
-.bar{position:sticky;top:0;z-index:60;background:rgba(10,12,11,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.bar-in{max-width:1180px;margin:0 auto;padding:0 18px;min-height:58px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.mark{font-family:var(--disp);font-weight:800;font-size:22px;display:flex;align-items:center;gap:7px;white-space:nowrap}
-.mark i{width:9px;height:9px;background:var(--green);border-radius:2px;display:block;box-shadow:0 0 10px var(--green);font-style:normal}
-.mark span{color:var(--green)}
-.nav{display:flex;gap:4px;margin-left:auto;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0}
-.nav button{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:8px 11px;border-radius:5px}
-.nav button:hover{color:var(--text);background:var(--panel-2)}
-.nav button[aria-current="true"]{color:var(--green);background:rgba(57,230,107,.08)}
-.nav button[hidden]{display:none}
-.cartbtn{position:relative;padding-right:26px!important}
-.cartbtn b{position:absolute;top:50%;transform:translateY(-50%);right:2px;background:var(--green);color:#04120A;font-family:var(--mono);font-size:9.5px;min-width:15px;height:15px;border-radius:8px;display:grid;place-items:center;padding:0 3px}
+.wrap{
+  width:min(1180px,100%);
+  margin:auto;
+  padding:0 18px;
+}
 
-.wrap{max-width:1180px;margin:0 auto;padding:0 18px}
+.bar{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:rgba(8,11,9,.93);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+
+.bar-in{
+  height:64px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--disp);
+  font-weight:800;
+  font-size:24px;
+  letter-spacing:-.03em;
+}
+
+.logo i{
+  width:11px;
+  height:11px;
+  background:var(--green);
+  border-radius:3px;
+  transform:rotate(45deg);
+  box-shadow:0 0 12px rgba(57,230,107,.7);
+}
+
+.logo span{color:var(--green)}
+
+.nav{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  flex-wrap:wrap;
+}
+
+.nav button{
+  padding:8px 11px;
+  border-radius:6px;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:10.5px;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+
+.nav button:hover,
+.nav button[aria-current="true"]{
+  color:var(--green);
+  background:rgba(57,230,107,.08);
+}
+
+.nav button[hidden]{display:none}
+
+.cart{
+  position:relative;
+}
+
+.cart b{
+  position:absolute;
+  right:1px;
+  top:1px;
+  min-width:15px;
+  height:15px;
+  padding:0 4px;
+  border-radius:10px;
+  background:var(--green);
+  color:#031008;
+  font-size:9px;
+  display:grid;
+  place-items:center;
+}
+
 .view{display:none;padding:30px 0 80px}
 .view.on{display:block}
 
-.hero{border-bottom:1px solid var(--line);padding:34px 0 30px}
-.hero h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6.4vw,52px);line-height:.98;max-width:15ch}
-.hero h1 em{font-style:normal;color:var(--green)}
-.hero p{color:var(--dim);max-width:52ch;margin-top:13px;font-size:14.5px}
-.trust{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}
-.trust span{font-family:var(--mono);font-size:11px;border:1px solid var(--line);padding:6px 10px;border-radius:4px;color:var(--dim)}
-.trust span b{color:var(--green);font-weight:600}
+.hero{
+  position:relative;
+  overflow:hidden;
+  padding:72px 0 45px;
+  border-bottom:1px solid var(--line);
+}
 
-.shead{display:flex;align-items:baseline;gap:14px;margin:30px 0 14px;flex-wrap:wrap}
-.shead h2{font-family:var(--disp);font-weight:600;font-size:20px;letter-spacing:.04em;text-transform:uppercase}
-.shead p{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.hero:after{
+  content:"iLiNuX";
+  position:absolute;
+  right:-20px;
+  bottom:-45px;
+  font-family:var(--disp);
+  font-size:clamp(120px,20vw,260px);
+  font-weight:800;
+  line-height:1;
+  color:rgba(57,230,107,.035);
+  pointer-events:none;
+}
 
-.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:13px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
-.filters input,.filters select{background:var(--ink);border:1px solid var(--line);border-radius:5px;padding:8px 10px;font-size:13.5px}
-.filters input{flex:1;min-width:170px}
-.filters input::placeholder{color:#5C665F}
+.kicker{
+  color:var(--green);
+  font-family:var(--mono);
+  font-size:10.5px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  margin-bottom:14px;
+}
 
-.ledger{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:12px}
-.lrow{display:grid;grid-template-columns:104px 1fr 84px 96px 104px;gap:14px;align-items:center;padding:13px 15px;border-bottom:1px solid var(--line);background:var(--panel)}
-.lrow:last-child{border-bottom:none}
-.lhead{background:var(--panel-2);font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);padding:9px 15px}
-.sku{font-family:var(--mono);font-size:11.5px;color:var(--green)}
-.pname{font-weight:500;font-size:14.5px}
-.pmeta{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
-.grade{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);border-radius:3px;padding:3px 6px;text-align:center;color:var(--dim)}
-.grade.a{color:var(--green);border-color:var(--green-dim)}
-.price{font-family:var(--mono);font-size:14px;font-weight:600;text-align:right}
-.add{border:1px solid var(--green-dim);color:var(--green);border-radius:5px;padding:8px 0;width:100%;font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;transition:.14s}
-.add:hover{background:var(--green);color:#04120A}
-.seller{font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;align-items:center;gap:5px}
-.tick{color:var(--green);font-style:normal}
-.flag{display:inline-block;font-family:var(--mono);font-size:9.5px;color:var(--amber);border:1px solid rgba(232,163,61,.35);background:rgba(232,163,61,.08);padding:2px 5px;border-radius:3px}
-.flag.bad{color:var(--red);border-color:rgba(226,86,75,.4);background:rgba(226,86,75,.08)}
-.empty{padding:36px 15px;text-align:center;color:var(--dim);background:var(--panel);font-size:14px}
-.empty b{display:block;color:var(--text);font-family:var(--disp);font-size:17px;margin-bottom:5px;text-transform:uppercase;font-weight:600}
-.thumb{width:56px;height:56px;border-radius:6px;object-fit:cover;background:var(--panel-2);border:1px solid var(--line);flex-shrink:0;display:block}
-.thumb.ph{display:grid;place-items:center;color:#3E4A42;font-size:19px}
-.pcell{display:flex;gap:12px;align-items:flex-start;min-width:0}
-.pcell .ptext{min-width:0;flex:1}
-.lrow{cursor:pointer;transition:background .12s}
-.lrow:hover{background:var(--panel-2)}
-.lrow .acell{cursor:default}
+.hero h1{
+  font-family:var(--disp);
+  font-size:clamp(48px,8vw,82px);
+  font-weight:800;
+  line-height:.9;
+  letter-spacing:-.04em;
+  max-width:11ch;
+}
 
-/* product sheet */
-.sheet{position:fixed;inset:0;z-index:90;display:none;overflow-y:auto;background:rgba(4,6,5,.82);backdrop-filter:blur(4px)}
-.sheet.on{display:block}
-.sheet-in{max-width:820px;margin:5vh auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2px;background:var(--line)}
-.gal img{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--panel-2);display:block}
-.gal .none{aspect-ratio:16/6;display:grid;place-items:center;background:var(--panel-2);color:var(--dim);font-family:var(--mono);font-size:12px}
-.sheet-body{padding:22px}
-.sheet-body h2{font-family:var(--disp);font-size:26px;letter-spacing:.01em;font-weight:800;line-height:1.05}
-.sheet-close{position:sticky;top:0;float:right;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;width:32px;height:32px;color:var(--dim);font-size:20px;line-height:1;margin:10px}
-.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
-.spec div{background:var(--ink);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
-.spec b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:400;margin-bottom:3px}
-.bigprice{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--green)}
+.hero h1 em{
+  color:var(--green);
+  font-style:normal;
+}
 
-.photobar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.photobar img{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.hero p{
+  color:var(--dim);
+  max-width:64ch;
+  margin-top:18px;
+  line-height:1.75;
+}
 
-.skel{height:52px;background:linear-gradient(90deg,var(--panel),var(--panel-2),var(--panel));background-size:200% 100%;animation:sh 1.2s infinite;border-bottom:1px solid var(--line)}
-@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
-@media(prefers-reduced-motion:reduce){.skel{animation:none}}
+.hero-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-top:24px;
+}
 
-.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.field{margin-bottom:13px}
-.field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
-.field input,.field select,.field textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:5px;padding:10px 11px;font-size:14px}
-.field textarea{min-height:74px;resize:vertical}
-.hint{font-size:12px;color:var(--dim);margin-top:5px}
-.btn{background:var(--green);color:#04120A;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:12px 20px;border-radius:6px;transition:.14s}
-.btn:hover{filter:brightness(1.12)}
-.btn:disabled{opacity:.45;cursor:wait}
+.trust{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:25px;
+}
+
+.trust span{
+  border:1px solid var(--line);
+  background:rgba(17,22,18,.7);
+  border-radius:5px;
+  padding:7px 10px;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:10.5px;
+}
+
+.trust b{color:var(--green)}
+
+.section-head{
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:12px;
+  margin:38px 0 14px;
+}
+
+.section-head h2{
+  font-family:var(--disp);
+  font-size:25px;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+
+.section-head p{
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:11px;
+}
+
+.filters{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:13px;
+  border:1px solid var(--line);
+  background:rgba(17,22,18,.9);
+  border-radius:8px;
+  position:sticky;
+  top:76px;
+  z-index:20;
+  backdrop-filter:blur(10px);
+}
+
+.filters input,
+.filters select,
+.field input,
+.field select,
+.field textarea{
+  width:100%;
+  background:var(--ink);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:10px 11px;
+}
+
+.filters input{
+  flex:1;
+  min-width:190px;
+}
+
+.filters select{
+  width:auto;
+  min-width:145px;
+}
+
+input:focus,select:focus,textarea:focus{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px rgba(57,230,107,.08);
+  outline:0;
+}
+
+.ledger{
+  border:1px solid var(--line);
+  border-radius:8px;
+  overflow:hidden;
+  margin-top:12px;
+  box-shadow:0 18px 40px rgba(0,0,0,.18);
+}
+
+.lrow{
+  display:grid;
+  grid-template-columns:105px 1fr 90px 105px 100px;
+  gap:13px;
+  align-items:center;
+  padding:13px 15px;
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+  transition:.15s;
+}
+
+.lrow:not(.lhead):hover{
+  background:var(--panel2);
+  transform:translateX(2px);
+}
+
+.lhead{
+  background:var(--panel2);
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.sku{
+  color:var(--green);
+  font-family:var(--mono);
+  font-size:11px;
+}
+
+.pcell{
+  display:flex;
+  gap:12px;
+  min-width:0;
+}
+
+.thumb{
+  width:62px;
+  height:62px;
+  object-fit:cover;
+  flex:none;
+  border-radius:6px;
+  border:1px solid var(--line);
+  background:var(--panel2);
+}
+
+.thumb.ph{
+  display:grid;
+  place-items:center;
+  color:#455149;
+  font-size:20px;
+}
+
+.pname{
+  font-size:14px;
+  font-weight:600;
+}
+
+.pmeta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:3px;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:10.5px;
+}
+
+.grade{
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:4px 6px;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:10px;
+  text-align:center;
+}
+
+.grade.a{
+  color:var(--green);
+  border-color:var(--green2);
+}
+
+.price{
+  font-family:var(--mono);
+  font-weight:600;
+  text-align:right;
+}
+
+.add{
+  width:100%;
+  min-height:38px;
+  border:1px solid var(--green2);
+  color:var(--green);
+  border-radius:5px;
+  font-family:var(--mono);
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+
+.add:hover{
+  background:var(--green);
+  color:#04120a;
+}
+
+.flag{
+  display:inline-block;
+  color:var(--amber);
+  border:1px solid rgba(232,163,61,.35);
+  background:rgba(232,163,61,.08);
+  padding:2px 5px;
+  border-radius:3px;
+}
+
+.empty{
+  padding:38px 18px;
+  text-align:center;
+  color:var(--dim);
+  background:var(--panel);
+}
+
+.empty b{
+  display:block;
+  color:var(--text);
+  font-family:var(--disp);
+  font-size:19px;
+  text-transform:uppercase;
+  margin-bottom:5px;
+}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:18px;
+  box-shadow:0 14px 35px rgba(0,0,0,.15);
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.field{margin-bottom:14px}
+
+.field label{
+  display:block;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  margin-bottom:5px;
+}
+
+.field textarea{
+  min-height:80px;
+  resize:vertical;
+}
+
+.hint{
+  color:var(--dim);
+  font-size:12px;
+  margin-top:5px;
+}
+
+.btn{
+  background:var(--green);
+  color:#04120a;
+  border-radius:6px;
+  padding:11px 18px;
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  transition:.15s;
+}
+
+.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
 .btn.ghost{background:none;border:1px solid var(--line);color:var(--text)}
-.btn.ghost:hover{border-color:var(--green);color:var(--green);filter:none}
-.btn.sm{padding:7px 12px;font-size:11px}
-.btn.danger{background:none;border:1px solid rgba(226,86,75,.4);color:var(--red)}
-.notice{border-left:2px solid var(--amber);background:rgba(232,163,61,.07);padding:11px 13px;font-size:13px;color:#D9C9A8;border-radius:0 5px 5px 0;margin:12px 0}
-.notice b{color:var(--amber)}
-.notice.err{border-color:var(--red);background:rgba(226,86,75,.08);color:#E9BDB8}
-.notice.err b{color:var(--red)}
+.btn.ghost:hover{border-color:var(--green);color:var(--green)}
+.btn.danger{background:none;border:1px solid rgba(226,86,75,.45);color:var(--red)}
+.btn.sm{padding:7px 11px;font-size:10px}
 
-.scrim{position:fixed;inset:0;background:rgba(4,6,5,.72);z-index:70;display:none}
-.scrim.on{display:block}
-.drawer{position:fixed;top:0;right:0;height:100%;width:min(420px,100%);background:var(--panel);border-left:1px solid var(--line);z-index:80;transform:translateX(102%);transition:transform .22s ease;display:flex;flex-direction:column}
+.notice{
+  margin:12px 0;
+  padding:11px 13px;
+  border-left:2px solid var(--amber);
+  border-radius:0 5px 5px 0;
+  background:rgba(232,163,61,.07);
+  color:#dccaa7;
+  font-size:13px;
+}
+
+.notice b{color:var(--amber)}
+
+.qrow{
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+  padding:14px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.qrow:last-child{border-bottom:0}
+
+.qn{flex:1;min-width:0}
+.qn>b{font-size:14px}
+.qacts{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+
+.tabs{
+  display:flex;
+  gap:7px;
+  margin-bottom:14px;
+  flex-wrap:wrap;
+}
+
+.tabs button{
+  border:1px solid var(--line);
+  color:var(--dim);
+  padding:7px 11px;
+  border-radius:5px;
+  font-family:var(--mono);
+  font-size:10px;
+  text-transform:uppercase;
+}
+
+.tabs button[aria-pressed="true"]{
+  color:var(--green);
+  border-color:var(--green2);
+  background:rgba(57,230,107,.07);
+}
+
+.drawer{
+  position:fixed;
+  top:0;
+  right:0;
+  width:min(430px,100%);
+  height:100%;
+  background:var(--panel);
+  border-left:1px solid var(--line);
+  z-index:300;
+  transform:translateX(105%);
+  transition:.22s;
+  display:flex;
+  flex-direction:column;
+  box-shadow:-25px 0 70px rgba(0,0,0,.4);
+}
+
 .drawer.on{transform:none}
-@media(prefers-reduced-motion:reduce){.drawer{transition:none}}
-.dhead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center}
-.dhead h3{font-family:var(--disp);font-size:19px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
-.dhead button{margin-left:auto;color:var(--dim);font-size:22px;line-height:1}
-.dbody{flex:1;overflow-y:auto;padding:16px 18px}
-.dfoot{padding:16px 18px;border-top:1px solid var(--line)}
-.citem{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
-.citem .cn{flex:1}
-.citem .cn b{font-weight:500;font-size:14px;display:block}
-.citem .cn span{font-family:var(--mono);font-size:11px;color:var(--dim)}
-.qty{display:flex;align-items:center;gap:9px;margin-top:6px}
-.qty button{width:23px;height:23px;border:1px solid var(--line);border-radius:4px;color:var(--dim);line-height:1}
-.qty span{font-family:var(--mono);font-size:12.5px;min-width:15px;text-align:center}
-.trow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12.5px;color:var(--dim);margin-bottom:7px}
-.trow.tot{color:var(--text);font-size:16px;font-weight:600;margin:11px 0 14px}
+
+.scrim{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  z-index:250;
+  display:none;
+}
+
+.scrim.on{display:block}
+
+.dhead{
+  display:flex;
+  align-items:center;
+  padding:16px 18px;
+  border-bottom:1px solid var(--line);
+}
+
+.dhead h3{
+  font-family:var(--disp);
+  font-size:20px;
+  text-transform:uppercase;
+}
+
+.dhead button{
+  margin-left:auto;
+  font-size:24px;
+  color:var(--dim);
+}
+
+.dbody{
+  flex:1;
+  overflow:auto;
+  padding:17px 18px;
+}
+
+.dfoot{
+  padding:16px 18px;
+  border-top:1px solid var(--line);
+}
+
+.citem{
+  display:flex;
+  gap:10px;
+  padding:11px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.cn{flex:1}
+.cn>b{display:block;font-size:14px}
+.cn>span{font-family:var(--mono);font-size:10px;color:var(--dim)}
+
+.qty{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:6px;
+}
+
+.qty button{
+  width:24px;
+  height:24px;
+  border:1px solid var(--line);
+  border-radius:4px;
+  color:var(--dim);
+}
+
+.qty span{
+  min-width:18px;
+  text-align:center;
+  font-family:var(--mono);
+  font-size:11px;
+}
+
+.trow{
+  display:flex;
+  justify-content:space-between;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:11.5px;
+  margin-bottom:7px;
+}
+
+.tot{
+  color:var(--text);
+  font-size:16px;
+  font-weight:600;
+  margin:12px 0 14px;
+}
+
 .dfoot .btn{width:100%}
 
-.netpick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.netpick button{border:1px solid var(--line);border-radius:6px;padding:11px 5px;font-family:var(--mono);font-size:11px;color:var(--dim);transition:.14s}
-.netpick button[aria-pressed="true"]{border-color:var(--green);color:var(--green);background:rgba(57,230,107,.08)}
-.paid{text-align:center;padding:26px 6px}
-.paid .ring{width:56px;height:56px;border:2px solid var(--green);border-radius:50%;display:grid;place-items:center;margin:0 auto 15px;color:var(--green);font-size:26px}
-.paid .ring.wait{border-color:var(--amber);color:var(--amber);border-top-color:transparent;animation:spin 1s linear infinite}
+.netpick{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+}
+
+.netpick button{
+  border:1px solid var(--line);
+  padding:10px;
+  border-radius:6px;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:10px;
+}
+
+.netpick button[aria-pressed="true"]{
+  color:var(--green);
+  border-color:var(--green);
+  background:rgba(57,230,107,.07);
+}
+
+.sheet{
+  position:fixed;
+  inset:0;
+  z-index:400;
+  display:none;
+  overflow:auto;
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(5px);
+}
+
+.sheet.on{display:block}
+
+.sheet-in{
+  width:min(820px,calc(100% - 24px));
+  margin:5vh auto;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.sheet-close{
+  float:right;
+  margin:10px;
+  width:34px;
+  height:34px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  background:var(--panel2);
+  font-size:20px;
+}
+
+.gal{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:2px;
+  background:var(--line);
+}
+
+.gal img{
+  width:100%;
+  aspect-ratio:4/3;
+  object-fit:cover;
+}
+
+.sheet-body{padding:22px}
+
+.sheet-body h2{
+  font-family:var(--disp);
+  font-size:28px;
+  text-transform:uppercase;
+}
+
+.spec{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:9px;
+  margin:16px 0;
+}
+
+.spec div{
+  padding:10px;
+  background:var(--ink);
+  border:1px solid var(--line);
+  border-radius:6px;
+}
+
+.spec b{
+  display:block;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:9px;
+  text-transform:uppercase;
+}
+
+.bigprice{
+  color:var(--green);
+  font-family:var(--mono);
+  font-size:25px;
+}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:20px;
+  transform:translate(-50%,150%);
+  z-index:600;
+  max-width:90vw;
+  padding:11px 17px;
+  border:1px solid var(--green2);
+  background:var(--panel2);
+  border-radius:7px;
+  box-shadow:0 15px 40px rgba(0,0,0,.4);
+  transition:.2s;
+  font-size:13px;
+}
+
+.toast.on{transform:translate(-50%,0)}
+.toast.bad{border-color:var(--red)}
+
+.paid{text-align:center;padding:35px 10px}
+.paid .ring{
+  width:58px;
+  height:58px;
+  margin:0 auto 15px;
+  display:grid;
+  place-items:center;
+  border:2px solid var(--green);
+  border-radius:50%;
+  color:var(--green);
+  font-size:25px;
+}
+
+.paid .wait{
+  border-color:var(--amber);
+  border-top-color:transparent;
+  animation:spin 1s linear infinite;
+}
+
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.paid .ring.wait{animation:none}}
-.paid h3{font-family:var(--disp);font-size:22px;text-transform:uppercase;font-weight:600}
-.paid code{display:block;font-family:var(--mono);font-size:13px;color:var(--green);margin:9px 0 5px}
-.paid p{color:var(--dim);font-size:13px;max-width:34ch;margin:0 auto}
 
-.qrow{display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}
-.qrow:last-child{border-bottom:none}
-.qrow .qn{flex:1}
-.qrow .qn b{font-weight:600;font-size:14.5px}
-.qacts{display:flex;gap:7px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
-.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-.tabs button{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);padding:7px 12px;border-radius:5px}
-.tabs button[aria-pressed="true"]{color:var(--green);border-color:var(--green-dim);background:rgba(57,230,107,.07)}
+footer{
+  border-top:1px solid var(--line);
+  padding:25px 0;
+  color:var(--dim);
+  font-size:11px;
+}
 
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(140%);background:var(--panel-2);border:1px solid var(--green-dim);padding:12px 18px;border-radius:7px;font-size:13.5px;z-index:100;transition:transform .2s;max-width:90vw}
-.toast.on{transform:translateX(-50%)}
-.toast.bad{border-color:rgba(226,86,75,.5)}
-
-footer{border-top:1px solid var(--line);padding:26px 0;color:var(--dim);font-size:12.5px}
-footer .fin{max-width:1180px;margin:0 auto;padding:0 18px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-footer .fin span{font-family:var(--mono);font-size:11px}
+footer .footin{
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  align-items:center;
+}
 
 @media(max-width:820px){
-  .lrow{grid-template-columns:1fr auto;gap:8px 12px;padding:14px}
+  .bar-in{height:58px}
+  .nav button{padding:7px 6px;font-size:9px}
+  .hero{padding:45px 0 35px}
+  .hero h1{font-size:clamp(42px,12vw,60px)}
+  .lrow{grid-template-columns:1fr auto}
   .lhead{display:none}
-  .lrow .sku{grid-column:1/-1}
-  .lrow .pcell{grid-column:1/2}
-  .lrow .gcell{grid-column:2/3;justify-self:end}
-  .lrow .price{grid-column:2/3;text-align:right}
-  .lrow .acell{grid-column:1/-1;margin-top:4px}
+  .lrow>.sku{grid-column:1/-1}
+  .lrow>.pcell{grid-column:1/2}
+  .lrow>.grade{grid-column:2/3}
+  .lrow>.price{grid-column:2/3}
+  .lrow>.acell{grid-column:1/-1}
   .grid2{grid-template-columns:1fr}
-  .nav button{padding:8px 6px;font-size:10px;letter-spacing:.04em}
-  .cartbtn{padding-right:24px!important}
-  .mark{font-size:19px}
+  .filters{position:static}
+}
+
+@media(max-width:520px){
+  .wrap{padding:0 13px}
+  .logo{font-size:19px}
+  .nav{gap:1px}
+  .nav button{font-size:8px;padding:6px 4px}
+  .trust{display:grid}
+  .trust span{width:100%}
 }
 </style>
 </head>
+
 <body>
 
-<div class="bar"><div class="bar-in">
-  <div class="mark"><i></i>i<span>Linux</span></div>
-  <nav class="nav">
-    <button data-go="shop" aria-current="true">Parts</button>
-    <button data-go="sell">Sell</button>
-    <button data-go="shop-mine" id="navShop" hidden>My shop</button>
-    <button data-go="orders" id="navOrders" hidden>Orders</button>
-    <button data-go="admin" id="navAdmin" hidden>Admin</button>
-    <button id="authBtn">Sign in</button>
-    <button class="cartbtn" id="cartBtn">Cart<b id="cartCount">0</b></button>
-  </nav>
-</div></div>
+<header class="bar">
+  <div class="wrap bar-in">
+    <div class="logo"><i></i>i<span>LiNuX</span></div>
 
-<!-- ============ SHOP ============ -->
+    <nav class="nav">
+      <button data-go="shop" aria-current="true">Parts</button>
+      <button data-go="sell">Sell</button>
+      <button data-go="shop-mine" id="navShop" hidden>My Shop</button>
+      <button data-go="orders" id="navOrders" hidden>Orders</button>
+      <button data-go="admin" id="navAdmin" hidden>Admin</button>
+      <button id="authBtn">Sign In</button>
+      <button class="cart" id="cartBtn">Cart <b id="cartCount">0</b></button>
+    </nav>
+  </div>
+</header>
+
 <section class="view on" id="v-shop">
-  <div class="hero"><div class="wrap">
-    <h1>Genuine parts, <em>traceable sellers</em>, Accra to your bench.</h1>
-    <p>Every seller is checked by hand before their first listing goes live. Pay by mobile money — funds are held until you confirm the part arrived as described.</p>
-    <div class="trust">
-      <span><b>✓</b> Sellers vetted manually</span>
-      <span><b>✓</b> Payment held until delivery confirmed</span>
-      <span><b>✓</b> Ownership proof required on locked stock</span>
+
+  <div class="hero">
+    <div class="wrap">
+
+      <div class="kicker">● iLiNuX MARKETPLACE / GHANA</div>
+
+      <h1>Parts you can <em>trust.</em></h1>
+
+      <p>
+        A technician-first marketplace for verified mobile phone parts,
+        trusted sellers, clear grades and secure Mobile Money payments.
+      </p>
+
+      <div class="hero-actions">
+        <button class="btn" onclick="$('#q').focus()">Browse Parts</button>
+        <button class="btn ghost" onclick="goto('sell')">Become a Seller</button>
+      </div>
+
+      <div class="trust">
+        <span><b>✓</b> Sellers manually reviewed</span>
+        <span><b>✓</b> Payment protected until delivery</span>
+        <span><b>✓</b> Locked stock requires proof</span>
+      </div>
+
     </div>
-  </div></div>
+  </div>
+
   <div class="wrap">
-    <div class="shead"><h2>Parts Ledger</h2><p id="ledgerCount">Loading…</p></div>
-    <div class="filters">
-      <input id="q" placeholder="Search part, model or SKU…" aria-label="Search parts">
-      <select id="fBrand" aria-label="Brand"><option value="">All brands</option><option>Apple</option><option>Samsung</option><option>Tecno</option><option>Infinix</option></select>
-      <select id="fType" aria-label="Category"><option value="">All categories</option><option>Screen</option><option>Battery</option><option>Charging port</option><option>Back glass</option><option>Camera</option></select>
-      <select id="fGrade" aria-label="Grade"><option value="">Any grade</option><option value="A">Grade A — new</option><option value="B">Grade B — pull</option></select>
+
+    <div class="section-head">
+      <h2>Parts Ledger</h2>
+      <p id="ledgerCount">Loading…</p>
     </div>
+
+    <div class="filters">
+      <input id="q" placeholder="Search part, model or SKU…" autocomplete="off">
+
+      <select id="fBrand">
+        <option value="">All brands</option>
+        <option>Apple</option>
+        <option>Samsung</option>
+        <option>Tecno</option>
+        <option>Infinix</option>
+      </select>
+
+      <select id="fType">
+        <option value="">All categories</option>
+        <option>Screen</option>
+        <option>Battery</option>
+        <option>Charging port</option>
+        <option>Back glass</option>
+        <option>Camera</option>
+      </select>
+
+      <select id="fGrade">
+        <option value="">Any grade</option>
+        <option value="A">Grade A — New</option>
+        <option value="B">Grade B — Pull</option>
+      </select>
+    </div>
+
     <div class="ledger" id="ledger"></div>
-    <div class="notice"><b>On iCloud-locked stock:</b> locked screens and boards are sold as parts only. Sellers upload ownership proof and the IMEI per listing before it is approved.</div>
+
+    <div class="notice">
+      <b>Locked stock:</b>
+      parts from locked devices are sold as parts only.
+      Ownership proof and donor IMEI must be supplied before approval.
+    </div>
+
   </div>
 </section>
 
-<!-- ============ SELL ============ -->
-<section class="view" id="v-sell"><div class="wrap">
-  <div class="shead"><h2>Sell on iLinux</h2><p>Applications reviewed within 48 hours</p></div>
-  <div class="grid2">
-    <div class="card" id="sellPane"></div>
-    <div class="card">
-      <h3 style="font-family:var(--disp);font-size:18px;text-transform:uppercase;margin-bottom:12px">How it works</h3>
-      <p style="font-size:14px;color:var(--dim);margin-bottom:14px">Selling is manual on purpose. Stolen and misdescribed parts are the fastest way a marketplace like this dies, so approval is a person reading your application.</p>
-      <div class="trow"><span>Commission per sale</span><span id="commLine">—</span></div>
-      <div class="trow"><span>Payout</span><span>MoMo, 24h after buyer confirms</span></div>
-      <div class="trow"><span>Misdescribed part</span><span>Refunded from your balance</span></div>
-      <div class="notice" style="margin-bottom:0"><b>Locked stock:</b> ownership proof and IMEI per unit. No proof, no listing.</div>
+<section class="view" id="v-sell">
+  <div class="wrap">
+
+    <div class="section-head">
+      <h2>Sell on iLiNuX</h2>
+      <p>Manual seller approval</p>
+    </div>
+
+    <div class="grid2">
+
+      <div class="card" id="sellPane"></div>
+
+      <div class="card">
+        <h3 style="font-family:var(--disp);font-size:21px;text-transform:uppercase;margin-bottom:12px">
+          How it works
+        </h3>
+
+        <p style="color:var(--dim);font-size:13px">
+          Every seller is reviewed before getting access to the marketplace.
+          This protects buyers and legitimate technicians.
+        </p>
+
+        <div style="margin-top:18px">
+          <div class="trow">
+            <span>Commission</span>
+            <span id="commLine">15%</span>
+          </div>
+
+          <div class="trow">
+            <span>Payout</span>
+            <span>MoMo after delivery confirmation</span>
+          </div>
+
+          <div class="trow">
+            <span>Locked parts</span>
+            <span>Proof + IMEI required</span>
+          </div>
+        </div>
+
+        <div class="notice">
+          <b>Important:</b>
+          never list stolen devices or parts without legitimate ownership.
+        </div>
+      </div>
+
     </div>
   </div>
-</div></section>
+</section>
 
-<!-- ============ MY SHOP ============ -->
-<section class="view" id="v-shop-mine"><div class="wrap">
-  <div class="shead"><h2>My Shop</h2><p id="shopStatus"></p></div>
-  <div class="grid2">
-    <div class="card">
-      <h3 style="font-family:var(--disp);font-size:17px;text-transform:uppercase;margin-bottom:12px">Add a part</h3>
-      <form id="listForm">
-        <div class="field"><label for="lName">Part name</label><input id="lName" required placeholder="iPhone 12 screen — incell"></div>
-        <div class="field"><label for="lSku">Your SKU</label><input id="lSku" required placeholder="KMS-SCR-0001"></div>
-        <div class="grid2" style="gap:10px">
-          <div class="field"><label for="lBrand">Brand</label><select id="lBrand"><option>Apple</option><option>Samsung</option><option>Tecno</option><option>Infinix</option></select></div>
-          <div class="field"><label for="lCat">Category</label><select id="lCat"><option>Screen</option><option>Battery</option><option>Charging port</option><option>Back glass</option><option>Camera</option></select></div>
-        </div>
-        <div class="grid2" style="gap:10px">
-          <div class="field"><label for="lPrice">Price (₵)</label><input id="lPrice" type="number" min="1" step="0.01" required></div>
-          <div class="field"><label for="lStock">Stock</label><input id="lStock" type="number" min="1" value="1" required></div>
-        </div>
-        <div class="field"><label for="lGrade">Grade</label><select id="lGrade"><option value="A">A — new</option><option value="B">B — pull / used</option></select></div>
-        <div class="field">
-          <label for="lPhotos">Photos of the actual part</label>
-          <input type="file" id="lPhotos" accept="image/*" multiple>
-          <p class="hint">Up to 4. Buyers rarely order a part they cannot see — shoot it on a plain surface in daylight.</p>
-          <div class="photobar" id="photoPreview"></div>
-        </div>
-        <div class="field">
-          <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;letter-spacing:0;color:var(--text)">
-            <input type="checkbox" id="lLocked" style="width:auto"> This part came from an iCloud-locked or otherwise locked device
-          </label>
-        </div>
-        <div id="lockedFields" style="display:none">
-          <div class="field"><label for="lImei">IMEI of the donor device</label><input id="lImei" placeholder="15 digits"></div>
-          <div class="field"><label for="lProof">Ownership proof</label><input type="file" id="lProof" accept="image/*,.pdf"><p class="hint">Receipt, purchase record or signed release. Admin-only — buyers never see it.</p></div>
-        </div>
-        <button class="btn" type="submit" id="listBtn">Submit for approval</button>
-      </form>
+<section class="view" id="v-shop-mine">
+  <div class="wrap">
+
+    <div class="section-head">
+      <h2>My Shop</h2>
+      <p id="shopStatus"></p>
     </div>
-    <div class="card"><h3 style="font-family:var(--disp);font-size:17px;text-transform:uppercase;margin-bottom:12px">Your listings</h3><div id="myListings"></div></div>
+
+    <div class="grid2">
+
+      <div class="card">
+
+        <h3 style="font-family:var(--disp);font-size:21px;text-transform:uppercase;margin-bottom:15px">
+          Add a Part
+        </h3>
+
+        <form id="listForm">
+
+          <div class="field">
+            <label>Part name</label>
+            <input id="lName" required placeholder="iPhone 12 screen — incell">
+          </div>
+
+          <div class="field">
+            <label>SKU</label>
+            <input id="lSku" required placeholder="ILX-SCR-0001">
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Brand</label>
+              <select id="lBrand">
+                <option>Apple</option>
+                <option>Samsung</option>
+                <option>Tecno</option>
+                <option>Infinix</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Category</label>
+              <select id="lCat">
+                <option>Screen</option>
+                <option>Battery</option>
+                <option>Charging port</option>
+                <option>Back glass</option>
+                <option>Camera</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Price (₵)</label>
+              <input id="lPrice" type="number" min="0.01" step="0.01" required>
+            </div>
+
+            <div class="field">
+              <label>Stock</label>
+              <input id="lStock" type="number" min="1" value="1" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Grade</label>
+            <select id="lGrade">
+              <option value="A">A — New</option>
+              <option value="B">B — Pull / Used</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Actual part photos</label>
+            <input id="lPhotos" type="file" accept="image/*" multiple>
+            <p class="hint">Maximum 4 photos. Maximum 5MB each.</p>
+            <div id="photoPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+          </div>
+
+          <div class="field">
+            <label style="display:flex;gap:8px;align-items:center;text-transform:none;color:var(--text)">
+              <input id="lLocked" type="checkbox" style="width:auto">
+              This part came from a locked device
+            </label>
+          </div>
+
+          <div id="lockedFields" style="display:none">
+
+            <div class="field">
+              <label>Donor IMEI</label>
+              <input id="lImei" inputmode="numeric" maxlength="15" placeholder="15 digits">
+            </div>
+
+            <div class="field">
+              <label>Ownership proof</label>
+              <input id="lProof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf">
+              <p class="hint">Receipt, purchase record or signed release.</p>
+            </div>
+
+          </div>
+
+          <button class="btn" id="listBtn" type="submit">
+            Submit for Approval
+          </button>
+
+        </form>
+      </div>
+
+      <div class="card">
+        <h3 style="font-family:var(--disp);font-size:21px;text-transform:uppercase;margin-bottom:15px">
+          Your Listings
+        </h3>
+
+        <div id="myListings"></div>
+      </div>
+
+    </div>
   </div>
-</div></section>
+</section>
 
-<!-- ============ ORDERS ============ -->
-<section class="view" id="v-orders"><div class="wrap">
-  <div class="shead"><h2>Your Orders</h2><p id="ordCount"></p></div>
-  <div class="card" id="orders"></div>
-</div></section>
+<section class="view" id="v-orders">
+  <div class="wrap">
 
-<!-- ============ ADMIN ============ -->
-<section class="view" id="v-admin"><div class="wrap">
-  <div class="shead"><h2>Approval Queue</h2><p>Nothing goes live until it clears here</p></div>
-  <div class="tabs">
-    <button data-tab="sellers" aria-pressed="true">Sellers <span id="tSellers"></span></button>
-    <button data-tab="listings" aria-pressed="false">Listings <span id="tListings"></span></button>
-    <button data-tab="payouts" aria-pressed="false">Payouts due <span id="tPayouts"></span></button>
+    <div class="section-head">
+      <h2>Your Orders</h2>
+      <p id="ordCount"></p>
+    </div>
+
+    <div class="card" id="orders"></div>
+
   </div>
-  <div class="card" id="qSellers"></div>
-  <div class="card" id="qListings" style="display:none"></div>
-  <div class="card" id="qPayouts" style="display:none"></div>
-</div></section>
+</section>
 
-<footer><div class="fin">
-  <div class="mark" style="font-size:17px"><i></i>i<span>Linux</span></div>
-  <span>Accra, Ghana</span><span>Repairs · Parts · Unlocking</span>
-</div></footer>
+<section class="view" id="v-admin">
+  <div class="wrap">
 
-<div class="sheet" id="sheet"><div class="sheet-in" id="sheetIn"></div></div>
+    <div class="section-head">
+      <h2>Admin Queue</h2>
+      <p>iLiNuX control center</p>
+    </div>
+
+    <div class="tabs">
+      <button data-tab="sellers" aria-pressed="true">
+        Sellers <span id="tSellers"></span>
+      </button>
+
+      <button data-tab="listings" aria-pressed="false">
+        Listings <span id="tListings"></span>
+      </button>
+
+      <button data-tab="payouts" aria-pressed="false">
+        Payouts <span id="tPayouts"></span>
+      </button>
+    </div>
+
+    <div class="card" id="qSellers"></div>
+    <div class="card" id="qListings" style="display:none"></div>
+    <div class="card" id="qPayouts" style="display:none"></div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footin">
+    <div class="logo" style="font-size:18px"><i></i>i<span>LiNuX</span></div>
+    <span>Accra, Ghana</span>
+    <span>Repairs · Parts · Mobile Solutions</span>
+  </div>
+</footer>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-in" id="sheetIn"></div>
+</div>
+
 <div class="scrim" id="scrim"></div>
-<aside class="drawer" id="drawer" aria-label="Panel">
-  <div class="dhead"><h3 id="dTitle">Cart</h3><button id="closeD" aria-label="Close">×</button></div>
+
+<aside class="drawer" id="drawer">
+  <div class="dhead">
+    <h3 id="dTitle">Cart</h3>
+    <button id="closeD">×</button>
+  </div>
+
   <div class="dbody" id="dBody"></div>
   <div class="dfoot" id="dFoot"></div>
 </aside>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="api.js"></script>
+
 <script>
 const $ = s => document.querySelector(s);
 
-/* Supabase clears the recovery token from the URL as soon as it loads,
-   so read it synchronously here, before anything async runs. */
-const URL_AT_LOAD = window.location.hash + window.location.search;
-const CAME_FROM_RECOVERY = /type=recovery/.test(URL_AT_LOAD);
-const LINK_ERROR = (URL_AT_LOAD.match(/error_description=([^&]+)/) || [])[1];
-let RECOVERY_FIRED = false;
-let ME = null, CART = [], NET = null, LISTINGS = [], payChannel = null;
+let ME = null;
+let CART = [];
+let NET = null;
+let LISTINGS = [];
+let payChannel = null;
+let toastTimer = null;
 
-/* ---------- helpers ---------- */
-let tT; function toast(msg, bad){
-  const t=$('#toast'); t.textContent=msg; t.classList.toggle('bad',!!bad); t.classList.add('on');
-  clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('on'), bad?4200:2400);
+function esc(value){
+  return String(value ?? '').replace(/[<>&"]/g, c => ({
+    '<':'&lt;',
+    '>':'&gt;',
+    '&':'&amp;',
+    '"':'&quot;'
+  }[c]));
 }
-const esc = s => String(s??'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
-const busy = (btn,on,label) => { btn.disabled=on; btn.textContent = on ? 'Working…' : label; };
 
-/* ---------- nav ---------- */
-document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
-  document.querySelectorAll('[data-go]').forEach(x => x.setAttribute('aria-current', x===b));
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
-  $('#v-'+b.dataset.go).classList.add('on');
-  window.scrollTo({top:0});
-  if(b.dataset.go==='orders') loadOrders();
-  if(b.dataset.go==='admin') loadAdmin();
-  if(b.dataset.go==='shop-mine') loadMyShop();
-  if(b.dataset.go==='sell') loadSellPane();
+function toast(message,bad=false){
+  const el = $('#toast');
+  el.textContent = message;
+  el.classList.toggle('bad',bad);
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'),bad ? 4500 : 2500);
+}
+
+function busy(btn,on,label){
+  if(!btn) return;
+  btn.disabled = on;
+  btn.textContent = on ? 'Working…' : label;
+}
+
+function goto(view){
+  const button = document.querySelector(`[data-go="${view}"]`);
+  if(button) button.click();
+}
+
+/* ---------- navigation ---------- */
+
+document.querySelectorAll('[data-go]').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('[data-go]').forEach(x =>
+      x.setAttribute('aria-current',x === btn ? 'true' : 'false')
+    );
+
+    document.querySelectorAll('.view').forEach(v =>
+      v.classList.remove('on')
+    );
+
+    const view = $('#v-' + btn.dataset.go);
+    if(view) view.classList.add('on');
+
+    window.scrollTo({top:0});
+
+    if(btn.dataset.go === 'shop') loadLedger();
+    if(btn.dataset.go === 'sell') loadSellPane();
+    if(btn.dataset.go === 'shop-mine') loadMyShop();
+    if(btn.dataset.go === 'orders') loadOrders();
+    if(btn.dataset.go === 'admin') loadAdmin();
+  };
 });
-function goto(v){ document.querySelector(`[data-go="${v}"]`).click(); }
 
 /* ---------- drawer ---------- */
-function openDrawer(){ $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); }
-function closeDrawer(){ $('#drawer').classList.remove('on'); $('#scrim').classList.remove('on'); if(payChannel){ db.removeChannel(payChannel); payChannel=null; } }
-$('#closeD').onclick = closeDrawer; $('#scrim').onclick = closeDrawer;
-document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeDrawer(); closeSheet(); } });
-document.getElementById('sheet').onclick = e => { if(e.target.id === 'sheet') closeSheet(); };
 
-/* ---------- auth ---------- */
+function openDrawer(){
+  $('#drawer').classList.add('on');
+  $('#scrim').classList.add('on');
+}
+
+function closeDrawer(){
+  $('#drawer').classList.remove('on');
+  $('#scrim').classList.remove('on');
+
+  if(payChannel){
+    db.removeChannel(payChannel);
+    payChannel = null;
+  }
+}
+
+$('#closeD').onclick = closeDrawer;
+$('#scrim').onclick = closeDrawer;
+
+document.addEventListener('keydown',e => {
+  if(e.key === 'Escape'){
+    closeDrawer();
+    closeSheet();
+  }
+});
+
+/* ---------- authentication ---------- */
+
 $('#authBtn').onclick = () => ME ? signOutNow() : showAuth();
-async function signOutNow(){ await Auth.signOut(); location.reload(); }
+
+async function signOutNow(){
+  try{
+    await Auth.signOut();
+    location.reload();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
 
 function showAuth(mode='in'){
-  $('#dTitle').textContent = mode==='in' ? 'Sign in' : 'Create account';
+
+  $('#dTitle').textContent =
+    mode === 'in' ? 'Sign In' : 'Create Account';
+
   $('#dBody').innerHTML = `
-    ${mode==='up' ? `
-      <div class="field"><label for="aName">Your name</label><input id="aName" required></div>
-      <div class="field"><label for="aPhone">Phone</label><input id="aPhone" inputmode="tel" placeholder="024 000 0000"></div>` : ''}
-    <div class="field"><label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="email"></div>
-    <div class="field"><label for="aPass">Password</label><input id="aPass" type="password" autocomplete="${mode==='up'?'new-password':'current-password'}"></div>
-    ${mode==='in' ? `<button id="aForgot" style="color:var(--green);font-size:13px;padding:0">Forgot your password?</button>` : ''}
-    <p class="hint">${mode==='up' ? 'We will email you a link to confirm your address before you can sign in.' : ''}</p>`;
+    ${mode === 'up' ? `
+      <div class="field">
+        <label>Full name</label>
+        <input id="aName" autocomplete="name">
+      </div>
+
+      <div class="field">
+        <label>Phone</label>
+        <input id="aPhone" inputmode="tel" autocomplete="tel">
+      </div>
+    ` : ''}
+
+    <div class="field">
+      <label>Email</label>
+      <input id="aEmail" type="email" autocomplete="email">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input id="aPass" type="password"
+        autocomplete="${mode === 'up' ? 'new-password' : 'current-password'}">
+    </div>
+
+    <p class="hint">
+      ${mode === 'up'
+        ? 'Confirm your email before signing in if email confirmation is enabled.'
+        : ''}
+    </p>
+  `;
+
   $('#dFoot').innerHTML = `
-    <button class="btn" id="aGo">${mode==='in'?'Sign in':'Create account'}</button>
-    <button class="btn ghost" id="aSwap" style="width:100%;margin-top:8px">${mode==='in'?'No account yet? Sign up':'Already registered? Sign in'}</button>`;
-  $('#aSwap').onclick = () => showAuth(mode==='in'?'up':'in');
-  if($('#aForgot')) $('#aForgot').onclick = () => showReset($('#aEmail').value.trim());
+    <button class="btn" id="aGo">
+      ${mode === 'in' ? 'Sign In' : 'Create Account'}
+    </button>
+
+    <button class="btn ghost" id="aSwap"
+      style="width:100%;margin-top:8px">
+      ${mode === 'in'
+        ? 'No account? Create one'
+        : 'Already registered? Sign in'}
+    </button>
+  `;
+
+  $('#aSwap').onclick =
+    () => showAuth(mode === 'in' ? 'up' : 'in');
+
   $('#aGo').onclick = async e => {
+
     const label = e.target.textContent;
+
     try{
-      busy(e.target,true);
-      if(mode==='in'){
-        await Auth.signIn($('#aEmail').value.trim(), $('#aPass').value);
-        closeDrawer(); await boot(); toast('Signed in');
+
+      busy(e.target,true,label);
+
+      if(mode === 'in'){
+
+        await Auth.signIn(
+          $('#aEmail').value.trim(),
+          $('#aPass').value
+        );
+
+        ME = await Auth.me();
+
+        closeDrawer();
+        await boot();
+        toast('Signed in');
+
       }else{
-        const em = $('#aEmail').value.trim();
-        await Auth.signUp(em, $('#aPass').value, $('#aName').value.trim(), $('#aPhone').value.trim());
-        showCheckEmail(em);
+
+        await Auth.signUp(
+          $('#aEmail').value.trim(),
+          $('#aPass').value,
+          $('#aName').value.trim(),
+          $('#aPhone').value.trim()
+        );
+
+        closeDrawer();
+        toast('Account created. Check your email if confirmation is enabled.');
+
       }
-    }catch(err){ toast(err.message, true); }
-    finally{ busy(e.target,false,label); }
+
+    }catch(err){
+      toast(err.message,true);
+    }finally{
+      busy(e.target,false,label);
+    }
   };
+
   openDrawer();
 }
 
-function showCheckEmail(email){
-  $('#dTitle').textContent = 'Check your email';
-  $('#dBody').innerHTML = `<div class="paid"><div class="ring">\u2709</div><h3>Almost there</h3>
-    <code>${esc(email)}</code>
-    <p>We sent a confirmation link to that address. Open it, then come back and sign in.</p>
-    <p style="margin-top:10px">Nothing after a few minutes? Check your spam folder.</p></div>`;
-  $('#dFoot').innerHTML = `<button class="btn ghost" id="aResend" style="width:100%">Send it again</button>
-    <button class="btn" id="aBackIn" style="width:100%;margin-top:8px">Back to sign in</button>`;
-  $('#aBackIn').onclick = () => showAuth('in');
-  $('#aResend').onclick = async e => {
-    try{ busy(e.target,true); await Auth.resendConfirmation(email); toast('Sent again \u2014 check your inbox'); }
-    catch(err){ toast(err.message, true); } finally{ busy(e.target,false,'Send it again'); }
-  };
-  openDrawer();
-}
+/* ---------- marketplace ---------- */
 
-function showReset(prefill){
-  $('#dTitle').textContent = 'Reset password';
-  $('#dBody').innerHTML = `<p class="hint" style="margin-bottom:14px">Enter the email you signed up with. We will send you a link to set a new password.</p>
-    <div class="field"><label for="rEmail">Email</label><input id="rEmail" type="email" autocomplete="email" value="${esc(prefill||'')}"></div>`;
-  $('#dFoot').innerHTML = `<button class="btn" id="rGo">Send reset link</button>
-    <button class="btn ghost" id="rBack" style="width:100%;margin-top:8px">Back to sign in</button>`;
-  $('#rBack').onclick = () => showAuth('in');
-  $('#rGo').onclick = async e => {
-    const em = $('#rEmail').value.trim();
-    if(!em.includes('@')) return toast('Enter a valid email', true);
-    try{
-      busy(e.target,true);
-      await Auth.requestPasswordReset(em);
-      $('#dTitle').textContent = 'Check your email';
-      $('#dBody').innerHTML = `<div class="paid"><div class="ring">\u2709</div><h3>Link sent</h3>
-        <code>${esc(em)}</code><p>Open the link in that email and you can set a new password.</p>
-        <p style="margin-top:10px">If no email arrives, that address may not have an account.</p></div>`;
-      $('#dFoot').innerHTML = `<button class="btn ghost" id="rDone" style="width:100%">Done</button>`;
-      $('#rDone').onclick = closeDrawer;
-    }catch(err){ toast(err.message, true); busy(e.target,false,'Send reset link'); }
-  };
-  openDrawer();
-}
-
-function showNewPassword(){
-  $('#dTitle').textContent = 'Set a new password';
-  $('#dBody').innerHTML = `<p class="hint" style="margin-bottom:14px">Choose a new password. At least 8 characters.</p>
-    <div class="field"><label for="nPass">New password</label><input id="nPass" type="password" autocomplete="new-password"></div>
-    <div class="field"><label for="nPass2">Type it again</label><input id="nPass2" type="password" autocomplete="new-password"></div>`;
-  $('#dFoot').innerHTML = `<button class="btn" id="nGo">Save new password</button>`;
-  $('#nGo').onclick = async e => {
-    const a1 = $('#nPass').value, b1 = $('#nPass2').value;
-    if(a1 !== b1) return toast('The two passwords do not match', true);
-    try{
-      busy(e.target,true);
-      await Auth.setNewPassword(a1);
-      closeDrawer();
-      history.replaceState(null,'',window.location.pathname);
-      await boot();
-      toast('Password changed \u2014 you are signed in');
-    }catch(err){ toast(err.message, true); busy(e.target,false,'Save new password'); }
-  };
-  openDrawer();
-}
-
-/* ---------- parts ledger ---------- */
 async function loadLedger(){
-  $('#ledger').innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+
+  $('#ledger').innerHTML =
+    '<div class="empty">Loading marketplace…</div>';
+
   try{
+
     LISTINGS = await Listings.browse({
-      q:$('#q').value.trim(), brand:$('#fBrand').value,
-      category:$('#fType').value, grade:$('#fGrade').value
+      q:$('#q').value.trim(),
+      brand:$('#fBrand').value,
+      category:$('#fType').value,
+      grade:$('#fGrade').value
     });
+
     renderLedger();
+
   }catch(e){
-    $('#ledger').innerHTML = `<div class="empty"><b>Could not load parts</b>${esc(e.message)}</div>`;
+
+    $('#ledger').innerHTML =
+      `<div class="empty"><b>Could not load parts</b>${esc(e.message)}</div>`;
+
     $('#ledgerCount').textContent = '';
+
   }
 }
+
 function renderLedger(){
-  $('#ledgerCount').textContent = LISTINGS.length + (LISTINGS.length===1?' listing live':' listings live');
-  const head = `<div class="lhead lrow"><span>SKU</span><span>Part</span><span>Grade</span><span>Price</span><span></span></div>`;
+
+  $('#ledgerCount').textContent =
+    `${LISTINGS.length} live listing${LISTINGS.length === 1 ? '' : 's'}`;
+
+  const head = `
+    <div class="lrow lhead">
+      <span>SKU</span>
+      <span>Part</span>
+      <span>Grade</span>
+      <span>Price</span>
+      <span></span>
+    </div>
+  `;
+
   if(!LISTINGS.length){
-    $('#ledger').innerHTML = head + `<div class="empty"><b>No parts match</b>Try a wider search, or clear the filters.</div>`;
+
+    $('#ledger').innerHTML =
+      head +
+      `<div class="empty">
+        <b>No parts found</b>
+        Try another search or clear your filters.
+      </div>`;
+
     return;
   }
-  $('#ledger').innerHTML = head + LISTINGS.map(p => `
-    <div class="lrow" data-open="${p.id}">
-      <span class="sku">${esc(p.sku)}</span>
-      <div class="pcell">
-        ${p.photos && p.photos.length
-          ? `<img class="thumb" src="${esc(p.photos[0])}" alt="${esc(p.name)}" loading="lazy">`
-          : `<div class="thumb ph">◫</div>`}
-        <div class="ptext">
-          <div class="pname">${esc(p.name)}</div>
-          <div class="pmeta">
-            <span>${esc(p.brand)} · ${esc(p.category)}</span>
-            <span>${p.stock} in stock</span>
-            ${p.is_locked ? '<span class="flag">OWNERSHIP PROOF ON FILE</span>' : ''}
+
+  $('#ledger').innerHTML =
+    head +
+    LISTINGS.map(p => `
+      <div class="lrow" data-open="${esc(p.id)}">
+
+        <span class="sku">${esc(p.sku)}</span>
+
+        <div class="pcell">
+
+          ${
+            p.photos?.length
+              ? `<img class="thumb"
+                    src="${esc(p.photos[0])}"
+                    alt="${esc(p.name)}"
+                    loading="lazy">`
+              : `<div class="thumb ph">◫</div>`
+          }
+
+          <div>
+            <div class="pname">${esc(p.name)}</div>
+
+            <div class="pmeta">
+              <span>${esc(p.brand)} · ${esc(p.category)}</span>
+              <span>${p.stock} available</span>
+            </div>
+
+            <div class="pmeta">
+              <span>✓ ${esc(p.sellers?.shop_name || 'iLiNuX Seller')}</span>
+
+              ${
+                p.is_locked
+                  ? `<span class="flag">OWNERSHIP VERIFIED</span>`
+                  : ''
+              }
+            </div>
           </div>
-          <div class="pmeta"><span class="seller"><i class="tick">✓</i>${esc(p.sellers?.shop_name ?? 'iLinux')}</span></div>
+
         </div>
+
+        <div class="grade ${p.grade === 'A' ? 'a' : ''}">
+          GRADE ${esc(p.grade)}
+        </div>
+
+        <div class="price">${fmt(p.price_pesewas)}</div>
+
+        <div>
+          <button class="add" data-id="${esc(p.id)}">
+            Add
+          </button>
+        </div>
+
       </div>
-      <div class="grade gcell ${p.grade==='A'?'a':''}">GRADE ${p.grade}</div>
-      <div class="price">${fmt(p.price_pesewas)}</div>
-      <div class="acell"><button class="add" data-id="${p.id}">Add</button></div>
-    </div>`).join('');
-  document.querySelectorAll('.add').forEach(b => b.onclick = e => { e.stopPropagation(); addToCart(b.dataset.id); });
-  document.querySelectorAll('[data-open]').forEach(r => r.onclick = () => openSheet(r.dataset.open));
+    `).join('');
+
+  document.querySelectorAll('.add').forEach(btn => {
+    btn.onclick = e => {
+      e.stopPropagation();
+      addToCart(btn.dataset.id);
+    };
+  });
+
+  document.querySelectorAll('[data-open]').forEach(row => {
+    row.onclick = () => openSheet(row.dataset.open);
+  });
 }
 
-/* ---------- product sheet ---------- */
+/* ---------- product ---------- */
+
 function openSheet(id){
+
   const p = LISTINGS.find(x => x.id === id);
   if(!p) return;
-  const gal = p.photos && p.photos.length
-    ? p.photos.slice(0,4).map(u => `<img src="${esc(u)}" alt="${esc(p.name)}" loading="lazy">`).join('')
-    : `<div class="none">No photo for this listing yet</div>`;
+
+  const gallery = p.photos?.length
+    ? p.photos.slice(0,4).map(url =>
+        `<img src="${esc(url)}" alt="${esc(p.name)}">`
+      ).join('')
+    : `<div class="empty">No product photo</div>`;
+
   $('#sheetIn').innerHTML = `
-    <button class="sheet-close" id="sheetX" aria-label="Close">×</button>
-    <div class="gal">${gal}</div>
+    <button class="sheet-close" id="sheetClose">×</button>
+
+    <div class="gal">${gallery}</div>
+
     <div class="sheet-body">
+
       <h2>${esc(p.name)}</h2>
-      <div class="pmeta" style="margin-top:8px"><span class="sku">${esc(p.sku)}</span><span class="seller"><i class="tick">✓</i>${esc(p.sellers?.shop_name ?? 'iLinux')}</span></div>
-      <div class="spec">
-        <div><b>Price</b><span class="bigprice">${fmt(p.price_pesewas)}</span></div>
-        <div><b>Grade</b>${p.grade === 'A' ? 'A — new' : 'B — pull / used'}</div>
-        <div><b>Fits</b>${esc(p.brand)} · ${esc(p.category)}</div>
-        <div><b>In stock</b>${p.stock}</div>
+
+      <div class="pmeta">
+        <span class="sku">${esc(p.sku)}</span>
+        <span>✓ ${esc(p.sellers?.shop_name || 'iLiNuX Seller')}</span>
       </div>
-      ${p.is_locked ? `<div class="notice"><b>From a locked device.</b> Sold as a part only. Ownership proof and IMEI are on file with iLinux.</div>` : ''}
-      <button class="btn" id="sheetAdd" style="width:100%;margin-top:6px">Add to cart</button>
-    </div>`;
+
+      <div class="spec">
+
+        <div>
+          <b>Price</b>
+          <span class="bigprice">${fmt(p.price_pesewas)}</span>
+        </div>
+
+        <div>
+          <b>Grade</b>
+          ${p.grade === 'A' ? 'A — New' : 'B — Pull / Used'}
+        </div>
+
+        <div>
+          <b>Category</b>
+          ${esc(p.category)}
+        </div>
+
+        <div>
+          <b>Stock</b>
+          ${p.stock}
+        </div>
+
+      </div>
+
+      ${
+        p.is_locked
+          ? `<div class="notice">
+               <b>Locked-device part.</b>
+               Sold as a part only. Ownership documentation and donor IMEI
+               have been reviewed by iLiNuX.
+             </div>`
+          : ''
+      }
+
+      <button class="btn" id="sheetAdd" style="width:100%">
+        Add to Cart
+      </button>
+
+    </div>
+  `;
+
   $('#sheet').classList.add('on');
   document.body.style.overflow = 'hidden';
-  $('#sheetX').onclick = closeSheet;
-  $('#sheetAdd').onclick = () => { addToCart(p.id); closeSheet(); };
+
+  $('#sheetClose').onclick = closeSheet;
+  $('#sheetAdd').onclick = () => {
+    addToCart(p.id);
+    closeSheet();
+  };
 }
-function closeSheet(){ $('#sheet').classList.remove('on'); document.body.style.overflow = ''; }
-let deb; ['#q','#fBrand','#fType','#fGrade'].forEach(s => $(s).oninput = () => { clearTimeout(deb); deb=setTimeout(loadLedger,250); });
+
+function closeSheet(){
+  $('#sheet').classList.remove('on');
+  document.body.style.overflow = '';
+}
+
+$('#sheet').onclick = e => {
+  if(e.target.id === 'sheet') closeSheet();
+};
+
+/* ---------- filters ---------- */
+
+let searchTimer;
+
+['#q','#fBrand','#fType','#fGrade'].forEach(selector => {
+
+  $(selector).oninput = () => {
+
+    clearTimeout(searchTimer);
+
+    searchTimer = setTimeout(
+      loadLedger,
+      250
+    );
+  };
+
+});
 
 /* ---------- cart ---------- */
+
 function addToCart(id){
-  const p = LISTINGS.find(x => x.id===id);
-  const line = CART.find(x => x.id===id);
-  if(line){ if(line.qty < p.stock) line.qty++; else return toast('That is all the seller has'); }
-  else CART.push({...p, qty:1});
-  syncCart(); toast(p.name + ' added');
+
+  const p = LISTINGS.find(x => x.id === id);
+  if(!p) return;
+
+  const line = CART.find(x => x.id === id);
+
+  if(line){
+
+    if(line.qty >= p.stock){
+      toast('Maximum available stock reached',true);
+      return;
+    }
+
+    line.qty++;
+
+  }else{
+
+    CART.push({...p,qty:1});
+
+  }
+
+  syncCart();
+  toast(`${p.name} added to cart`);
 }
+
 function syncCart(){
-  $('#cartCount').textContent = CART.reduce((a,c)=>a+c.qty,0);
-  if($('#drawer').classList.contains('on') && $('#dTitle').textContent==='Cart') renderCart();
+
+  $('#cartCount').textContent =
+    CART.reduce((sum,item) => sum + item.qty,0);
+
+  if(
+    $('#drawer').classList.contains('on') &&
+    $('#dTitle').textContent === 'Cart'
+  ){
+    renderCart();
+  }
 }
-$('#cartBtn').onclick = () => { renderCart(); openDrawer(); };
-const subtotal = () => CART.reduce((a,c)=>a+c.price_pesewas*c.qty,0);
-const delivery = () => subtotal() > 50000 ? 0 : 2500;
+
+const subtotal = () =>
+  CART.reduce(
+    (sum,item) => sum + item.price_pesewas * item.qty,
+    0
+  );
+
+const delivery = () =>
+  subtotal() > 50000 ? 0 : 2500;
+
+$('#cartBtn').onclick = () => {
+  renderCart();
+  openDrawer();
+};
 
 function renderCart(){
+
   $('#dTitle').textContent = 'Cart';
+
   if(!CART.length){
-    $('#dBody').innerHTML = `<div class="empty" style="background:none"><b>Cart is empty</b>Add a part from the ledger to start an order.</div>`;
-    $('#dFoot').innerHTML = ''; return;
+
+    $('#dBody').innerHTML = `
+      <div class="empty">
+        <b>Cart is empty</b>
+        Add parts from the marketplace.
+      </div>
+    `;
+
+    $('#dFoot').innerHTML = '';
+    return;
   }
-  $('#dBody').innerHTML = CART.map(c => `
-    <div class="citem"><div class="cn">
-      <b>${esc(c.name)}</b><span>${esc(c.sku)} · ${esc(c.sellers?.shop_name??'iLinux')}</span>
-      <div class="qty">
-        <button data-d="-1" data-i="${c.id}" aria-label="Reduce">−</button>
-        <span>${c.qty}</span>
-        <button data-d="1" data-i="${c.id}" aria-label="Increase">+</button>
-      </div></div>
-      <div class="price">${fmt(c.price_pesewas*c.qty)}</div></div>`).join('');
+
+  $('#dBody').innerHTML = CART.map(item => `
+    <div class="citem">
+
+      <div class="cn">
+        <b>${esc(item.name)}</b>
+        <span>${esc(item.sku)}</span>
+
+        <div class="qty">
+          <button data-qty="-1" data-id="${esc(item.id)}">−</button>
+          <span>${item.qty}</span>
+          <button data-qty="1" data-id="${esc(item.id)}">+</button>
+        </div>
+      </div>
+
+      <div class="price">
+        ${fmt(item.price_pesewas * item.qty)}
+      </div>
+
+    </div>
+  `).join('');
+
   $('#dFoot').innerHTML = `
-    <div class="trow"><span>Subtotal</span><span>${fmt(subtotal())}</span></div>
-    <div class="trow"><span>Delivery (Accra)</span><span>${delivery()?fmt(delivery()):'Free'}</span></div>
-    <div class="trow tot"><span>Total</span><span>${fmt(subtotal()+delivery())}</span></div>
-    <button class="btn" id="toPay">Pay with mobile money</button>`;
-  document.querySelectorAll('.qty button').forEach(b => b.onclick = () => {
-    const line = CART.find(x=>x.id===b.dataset.i);
-    line.qty += +b.dataset.d;
-    if(line.qty<1) CART = CART.filter(x=>x.id!==b.dataset.i);
-    syncCart();
+    <div class="trow">
+      <span>Subtotal</span>
+      <span>${fmt(subtotal())}</span>
+    </div>
+
+    <div class="trow">
+      <span>Delivery</span>
+      <span>${delivery() ? fmt(delivery()) : 'FREE'}</span>
+    </div>
+
+    <div class="trow tot">
+      <span>Total</span>
+      <span>${fmt(subtotal() + delivery())}</span>
+    </div>
+
+    <button class="btn" id="checkoutBtn">
+      Continue to Checkout
+    </button>
+  `;
+
+  document.querySelectorAll('[data-qty]').forEach(btn => {
+
+    btn.onclick = () => {
+
+      const item = CART.find(x => x.id === btn.dataset.id);
+      if(!item) return;
+
+      item.qty += Number(btn.dataset.qty);
+
+      if(item.qty < 1){
+        CART = CART.filter(x => x.id !== item.id);
+      }
+
+      const source = LISTINGS.find(x => x.id === item.id);
+
+      if(source && item.qty > source.stock){
+        item.qty = source.stock;
+      }
+
+      syncCart();
+    };
+
   });
-  $('#toPay').onclick = () => ME ? renderPay() : (toast('Sign in to place an order'), showAuth());
+
+  $('#checkoutBtn').onclick = () => {
+
+    if(!ME){
+      toast('Sign in before checkout',true);
+      showAuth();
+      return;
+    }
+
+    renderPay();
+  };
 }
 
 /* ---------- checkout ---------- */
+
 function renderPay(){
-  $('#dTitle').textContent = 'Mobile money';
-  const total = subtotal()+delivery();
+
+  NET = null;
+
+  $('#dTitle').textContent = 'Mobile Money';
+
+  const total = subtotal() + delivery();
+
   $('#dBody').innerHTML = `
-    <div class="field"><label>Network</label>
+
+    <div class="field">
+      <label>Mobile Money Network</label>
+
       <div class="netpick">
-        <button data-n="MTN" aria-pressed="false">MTN</button>
-        <button data-n="Telecel" aria-pressed="false">Telecel</button>
-        <button data-n="AT" aria-pressed="false">AT</button>
-      </div></div>
-    <div class="field"><label for="mNum">MoMo number</label><input id="mNum" inputmode="tel" value="${esc(ME?.profile?.phone??'')}" placeholder="024 000 0000"></div>
-    <div class="field"><label for="mName">Delivery name</label><input id="mName" value="${esc(ME?.profile?.full_name??'')}"></div>
-    <div class="field"><label for="mArea">Delivery area</label><input id="mArea" placeholder="Osu, Accra"></div>
-    <div class="notice"><b>Held, not released.</b> Your ${fmt(total)} stays with iLinux until you confirm the part arrived as described.</div>`;
+        <button data-net="MTN" aria-pressed="false">MTN</button>
+        <button data-net="ATMoney" aria-pressed="false">ATMoney</button>
+        <button data-net="Telecel" aria-pressed="false">Telecel</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>MoMo Number</label>
+      <input
+        id="mPhone"
+        inputmode="tel"
+        value="${esc(ME?.profile?.phone || '')}"
+        placeholder="0240000000">
+    </div>
+
+    <div class="field">
+      <label>Delivery Name</label>
+      <input
+        id="mName"
+        value="${esc(ME?.profile?.full_name || '')}">
+    </div>
+
+    <div class="field">
+      <label>Delivery Area</label>
+      <input id="mArea" placeholder="Kasoa, Accra">
+    </div>
+
+    <div class="notice">
+      <b>Payment protection:</b>
+      your payment is held until you confirm delivery.
+    </div>
+  `;
+
   $('#dFoot').innerHTML = `
-    <div class="trow tot"><span>To pay</span><span>${fmt(total)}</span></div>
-    <button class="btn" id="doPay">Send payment prompt</button>
-    <button class="btn ghost" id="backCart" style="width:100%;margin-top:8px">Back to cart</button>`;
-  document.querySelectorAll('.netpick button').forEach(b => b.onclick = () => {
-    document.querySelectorAll('.netpick button').forEach(x=>x.setAttribute('aria-pressed', x===b));
-    NET = b.dataset.n;
+
+    <div class="trow tot">
+      <span>Total</span>
+      <span>${fmt(total)}</span>
+    </div>
+
+    <button class="btn" id="payBtn">
+      Send Payment Prompt
+    </button>
+
+    <button class="btn ghost" id="backCart"
+      style="width:100%;margin-top:8px">
+      Back to Cart
+    </button>
+  `;
+
+  document.querySelectorAll('[data-net]').forEach(btn => {
+
+    btn.onclick = () => {
+
+      document.querySelectorAll('[data-net]').forEach(x =>
+        x.setAttribute('aria-pressed',x === btn ? 'true' : 'false')
+      );
+
+      NET = btn.dataset.net;
+    };
+
   });
+
   $('#backCart').onclick = renderCart;
-  $('#doPay').onclick = async e => {
-    if(!NET) return toast('Choose a network first', true);
-    const phone = $('#mNum').value.trim(), name = $('#mName').value.trim(), area = $('#mArea').value.trim();
-    if(phone.replace(/\D/g,'').length < 9) return toast('Enter a valid MoMo number', true);
-    if(!name || !area) return toast('Name and delivery area are needed', true);
-    try{
-      busy(e.target, true);
-      const order = await Orders.create({
-        items: CART.map(c => ({id:c.id, seller_id:c.seller_id, sku:c.sku, name:c.name, price_pesewas:c.price_pesewas, qty:c.qty})),
-        buyerName:name, buyerPhone:phone, deliveryArea:area, momoNetwork:NET
-      });
-      const {data, error} = await db.functions.invoke('paystack-init', {
-        body:{ order_ref:order.ref, momo_phone:phone, momo_network:NET }
-      });
-      if(error || data?.error) throw new Error(data?.error ?? error.message);
-      CART = []; syncCart();
-      awaitPayment(order.ref, data.display_text);
-    }catch(err){
-      toast(err.message, true);
-      busy(e.target,false,'Send payment prompt');
+
+  $('#payBtn').onclick = async e => {
+
+    if(!NET){
+      toast('Choose a network first',true);
+      return;
     }
+
+    const phone = $('#mPhone').value.trim();
+    const name = $('#mName').value.trim();
+    const area = $('#mArea').value.trim();
+
+    try{
+
+      if(phone.replace(/\D/g,'').length < 9)
+        throw new Error('Enter a valid MoMo number.');
+
+      if(!name)
+        throw new Error('Delivery name is required.');
+
+      if(!area)
+        throw new Error('Delivery area is required.');
+
+      busy(e.target,true,'Send Payment Prompt');
+
+      const order = await Orders.create({
+        items:CART.map(item => ({
+          id:item.id,
+          qty:item.qty
+        })),
+        buyerName:name,
+        buyerPhone:phone,
+        deliveryArea:area,
+        momoNetwork:NET
+      });
+
+      const payment = await Payments.start({
+        orderRef:order.ref,
+        phone,
+        network:NET
+      });
+
+      CART = [];
+      syncCart();
+
+      awaitPayment(
+        order.ref,
+        payment.display_text || 'Approve the payment request on your phone.'
+      );
+
+    }catch(err){
+
+      toast(err.message,true);
+      busy(e.target,false,'Send Payment Prompt');
+
+    }
+
   };
 }
 
-// The browser never decides a payment succeeded — the webhook does.
-// We just watch the order row until it flips to 'held'.
-function awaitPayment(ref, text){
-  $('#dTitle').textContent = 'Waiting for approval';
-  $('#dBody').innerHTML = `<div class="paid">
-    <div class="ring wait"></div><h3>Check your phone</h3>
-    <code>${esc(ref)}</code><p>${esc(text)}</p></div>`;
-  $('#dFoot').innerHTML = `<button class="btn ghost" id="closeP" style="width:100%">Close — I will check Orders</button>`;
-  $('#closeP').onclick = closeDrawer;
+/* ---------- payment waiting ---------- */
 
-  payChannel = db.channel('pay-'+ref)
-    .on('postgres_changes',
-        {event:'UPDATE', schema:'public', table:'orders', filter:'ref=eq.'+ref},
-        p => {
-          if(p.new.status === 'held'){
-            $('#dBody').innerHTML = `<div class="paid">
-              <div class="ring">✓</div><h3>Payment received</h3>
-              <code>${esc(ref)}</code>
-              <p>We are holding the money. Confirm delivery in Orders once the part reaches you.</p></div>`;
-            $('#dFoot').innerHTML = `<button class="btn" id="closeP2" style="width:100%">Done</button>`;
-            $('#closeP2').onclick = () => { closeDrawer(); goto('orders'); };
-            toast('Payment confirmed');
-          }
-        })
+function awaitPayment(ref,text){
+
+  $('#dTitle').textContent = 'Payment Pending';
+
+  $('#dBody').innerHTML = `
+    <div class="paid">
+      <div class="ring wait"></div>
+
+      <h3 style="font-family:var(--disp);font-size:23px;text-transform:uppercase">
+        Check your phone
+      </h3>
+
+      <code style="display:block;color:var(--green);margin:10px 0">
+        ${esc(ref)}
+      </code>
+
+      <p style="color:var(--dim);font-size:13px">
+        ${esc(text)}
+      </p>
+    </div>
+  `;
+
+  $('#dFoot').innerHTML = `
+    <button class="btn ghost" id="closePayment">
+      Close — Check Orders
+    </button>
+  `;
+
+  $('#closePayment').onclick = () => {
+    closeDrawer();
+    goto('orders');
+  };
+
+  if(payChannel){
+    db.removeChannel(payChannel);
+  }
+
+  payChannel = db
+    .channel('order-' + ref)
+    .on(
+      'postgres_changes',
+      {
+        event:'UPDATE',
+        schema:'public',
+        table:'orders',
+        filter:'ref=eq.' + ref
+      },
+      payload => {
+
+        if(payload.new.status === 'held'){
+
+          $('#dBody').innerHTML = `
+            <div class="paid">
+              <div class="ring">✓</div>
+
+              <h3 style="font-family:var(--disp);font-size:23px;text-transform:uppercase">
+                Payment Received
+              </h3>
+
+              <code style="display:block;color:var(--green);margin:10px 0">
+                ${esc(ref)}
+              </code>
+
+              <p style="color:var(--dim)">
+                Your payment is being held safely.
+                Confirm delivery after the part arrives.
+              </p>
+            </div>
+          `;
+
+          $('#dFoot').innerHTML = `
+            <button class="btn" id="ordersBtn">
+              View Order
+            </button>
+          `;
+
+          $('#ordersBtn').onclick = () => {
+            closeDrawer();
+            goto('orders');
+          };
+
+          toast('Payment received');
+
+        }
+
+      }
+    )
     .subscribe();
 }
 
 /* ---------- orders ---------- */
+
 async function loadOrders(){
-  if(!ME){ $('#orders').innerHTML = `<div class="empty" style="background:none"><b>Sign in</b>Your orders appear here once you have an account.</div>`; return; }
-  const list = await Orders.mine();
-  $('#ordCount').textContent = list.length ? list.length+' order'+(list.length>1?'s':'') : '';
-  if(!list.length){ $('#orders').innerHTML = `<div class="empty" style="background:none"><b>No orders yet</b>Parts you buy will show here.</div>`; return; }
-  const label = {awaiting_payment:'Awaiting payment', held:'Paid — held', delivered:'Delivered — seller paid', refunded:'Refunded', cancelled:'Cancelled'};
-  const colour = {awaiting_payment:'var(--dim)', held:'var(--amber)', delivered:'var(--green)', refunded:'var(--red)', cancelled:'var(--red)'};
-  $('#orders').innerHTML = list.map(o => `
-    <div class="qrow"><div class="qn">
-      <b>${esc(o.ref)}</b>
-      <div class="pmeta"><span>${new Date(o.created_at).toLocaleDateString('en-GB')}</span><span>${esc(o.momo_network??'')}</span><span>${o.order_items.length} item(s)</span><span>${fmt(o.total_pesewas)}</span></div>
-      <div class="pmeta"><span style="color:${colour[o.status]}">${label[o.status]}</span></div>
-    </div><div class="qacts">${o.status==='held' ? `<button class="btn sm" data-rel="${esc(o.ref)}">Confirm delivery</button>` : ''}</div></div>`).join('');
-  document.querySelectorAll('[data-rel]').forEach(b => b.onclick = async () => {
-    try{ busy(b,true); await Orders.confirmDelivery(b.dataset.rel); toast('Payment released to the seller'); loadOrders(); }
-    catch(e){ toast(e.message,true); busy(b,false,'Confirm delivery'); }
-  });
-}
 
-/* ---------- sell / apply ---------- */
-async function loadSellPane(){
-  $('#commLine').textContent = Math.round(COMMISSION*100) + '%';
   if(!ME){
-    $('#sellPane').innerHTML = `<div class="empty" style="background:none"><b>Sign in first</b>You need an account before applying to sell.</div>
-      <button class="btn" style="width:100%" onclick="showAuth()">Sign in or register</button>`;
+
+    $('#orders').innerHTML = `
+      <div class="empty">
+        <b>Sign In Required</b>
+        Your orders will appear here.
+      </div>
+    `;
+
     return;
   }
-  const s = await Sellers.mine();
-  if(s){
-    const msg = {
-      pending:['Application under review','We will message you once it is decided. Usually within 48 hours.'],
-      approved:['You are approved','Head to My shop to list your parts.'],
-      rejected:['Application not approved', s.reject_reason || 'Contact iLinux if you think this is a mistake.'],
-      suspended:['Account suspended','Contact iLinux.']
-    }[s.status];
-    $('#sellPane').innerHTML = `<div class="empty" style="background:none"><b>${msg[0]}</b>${esc(msg[1])}</div>`;
-    return;
+
+  try{
+
+    const orders = await Orders.mine();
+
+    $('#ordCount').textContent =
+      `${orders.length} order${orders.length === 1 ? '' : 's'}`;
+
+    if(!orders.length){
+
+      $('#orders').innerHTML = `
+        <div class="empty">
+          <b>No Orders Yet</b>
+          Your purchases will appear here.
+        </div>
+      `;
+
+      return;
+    }
+
+    const statusText = {
+      awaiting_payment:'Awaiting payment',
+      held:'Paid — payment held',
+      delivered:'Delivered — payout released',
+      refunded:'Refunded',
+      cancelled:'Cancelled'
+    };
+
+    $('#orders').innerHTML = orders.map(order => `
+
+      <div class="qrow">
+
+        <div class="qn">
+
+          <b>${esc(order.ref)}</b>
+
+          <div class="pmeta">
+            <span>${new Date(order.created_at).toLocaleDateString('en-GB')}</span>
+            <span>${esc(order.momo_network || '')}</span>
+            <span>${fmt(order.total_pesewas)}</span>
+          </div>
+
+          <div class="pmeta">
+            <span>${esc(statusText[order.status] || order.status)}</span>
+          </div>
+
+        </div>
+
+        <div class="qacts">
+
+          ${
+            order.status === 'held'
+              ? `<button
+                   class="btn sm"
+                   data-confirm="${esc(order.ref)}">
+                   Confirm Delivery
+                 </button>`
+              : ''
+          }
+
+        </div>
+
+      </div>
+
+    `).join('');
+
+    document.querySelectorAll('[data-confirm]').forEach(btn => {
+
+      btn.onclick = async () => {
+
+        const label = btn.textContent;
+
+        try{
+
+          busy(btn,true,label);
+
+          await Orders.confirmDelivery(
+            btn.dataset.confirm
+          );
+
+          toast('Delivery confirmed. Seller payout released.');
+          loadOrders();
+
+        }catch(e){
+
+          toast(e.message,true);
+          busy(btn,false,label);
+
+        }
+
+      };
+
+    });
+
+  }catch(e){
+
+    $('#orders').innerHTML =
+      `<div class="empty"><b>Could not load orders</b>${esc(e.message)}</div>`;
+
   }
-  $('#sellPane').innerHTML = `<form id="sellerForm">
-    <div class="field"><label for="sName">Shop or trading name</label><input id="sName" required placeholder="Kofi Mobile Spares"></div>
-    <div class="grid2" style="gap:10px">
-      <div class="field"><label for="sPhone">MoMo payout number</label><input id="sPhone" required placeholder="024 000 0000"></div>
-      <div class="field"><label for="sNet">Network</label><select id="sNet"><option>MTN</option><option>Telecel</option><option>AT</option></select></div>
-    </div>
-    <div class="field"><label for="sLoc">Where you trade from</label><input id="sLoc" required placeholder="Kwame Nkrumah Circle, Accra"></div>
-    <div class="field"><label for="sStock">What you stock</label><textarea id="sStock" required placeholder="Screens, batteries — brands and rough volumes"></textarea></div>
-    <div class="field"><label for="sId">Ghana Card number</label><input id="sId" required placeholder="GHA-000000000-0"><p class="hint">Checked against your payout number. Never shown to buyers.</p></div>
-    <button class="btn" type="submit" id="applyBtn">Send application</button></form>`;
-  $('#sellerForm').onsubmit = async e => {
-    e.preventDefault();
-    const btn = $('#applyBtn');
-    try{
-      busy(btn,true);
-      await Sellers.apply({
-        shopName:$('#sName').value, payoutPhone:$('#sPhone').value, payoutNet:$('#sNet').value,
-        location:$('#sLoc').value, stockDesc:$('#sStock').value, ghanaCard:$('#sId').value
-      });
-      toast('Application sent — you will hear back within 48 hours');
-      loadSellPane();
-    }catch(err){ toast(err.message,true); busy(btn,false,'Send application'); }
-  };
 }
 
-/* ---------- my shop ---------- */
-$('#lLocked').onchange = e => { $('#lockedFields').style.display = e.target.checked ? '' : 'none'; };
-$('#lPhotos').onchange = e => {
-  const files = [...e.target.files].slice(0,4);
-  $('#photoPreview').innerHTML = files.map(f => `<img src="${URL.createObjectURL(f)}" alt="">`).join('');
-  if(e.target.files.length > 4) toast('Only the first 4 photos will be used');
-};
-async function loadMyShop(){
-  const s = await Sellers.mine();
-  $('#shopStatus').textContent = s ? esc(s.shop_name) : '';
-  const mine = await Listings.mine();
-  const label = {pending:'Awaiting approval', live:'Live', rejected:'Rejected', sold_out:'Sold out', hidden:'Hidden'};
-  const colour = {pending:'var(--amber)', live:'var(--green)', rejected:'var(--red)', sold_out:'var(--dim)', hidden:'var(--dim)'};
-  $('#myListings').innerHTML = mine.length ? mine.map(l => `
-    <div class="qrow"><div class="qn">
-      <b>${esc(l.name)}</b>
-      <div class="pmeta"><span class="sku">${esc(l.sku)}</span><span>${fmt(l.price_pesewas)}</span><span>${l.stock} left</span><span style="color:${(l.photos&&l.photos.length)?'var(--dim)':'var(--amber)'}">${(l.photos&&l.photos.length)? l.photos.length+' photo'+(l.photos.length>1?'s':'') : 'no photo'}</span></div>
-      <div class="pmeta"><span style="color:${colour[l.status]}">${label[l.status]}</span></div>
-    </div></div>`).join('')
-    : `<div class="empty" style="background:none"><b>Nothing listed yet</b>Add your first part on the left.</div>`;
-}
-$('#listForm').onsubmit = async e => {
-  e.preventDefault();
-  const btn = $('#listBtn');
+/* ---------- seller application ---------- */
+
+async function loadSellPane(){
+
+  $('#commLine').textContent =
+    `${Math.round(COMMISSION * 100)}%`;
+
+  if(!ME){
+
+    $('#sellPane').innerHTML = `
+      <div class="empty">
+        <b>Sign In First</b>
+        Create an account before applying as a seller.
+      </div>
+
+      <button class="btn" style="width:100%;margin-top:10px"
+        onclick="showAuth()">
+        Sign In / Register
+      </button>
+    `;
+
+    return;
+  }
+
   try{
-    busy(btn,true);
-    let photos = [];
-    const picked = [...$('#lPhotos').files].slice(0,4);
-    if(picked.length){
-      busy(btn, true);
-      photos = await Listings.uploadPhotos(picked);
+
+    const seller = await Sellers.mine();
+
+    if(seller){
+
+      const text = {
+        pending:['Application Under Review','Your application is waiting for admin approval.'],
+        approved:['Seller Approved','You can now add parts from My Shop.'],
+        rejected:['Application Rejected',seller.reject_reason || 'Contact iLiNuX if you believe this is an error.'],
+        suspended:['Seller Suspended','Contact iLiNuX support.']
+      }[seller.status] || ['Seller Status',seller.status];
+
+      $('#sellPane').innerHTML = `
+        <div class="empty">
+          <b>${esc(text[0])}</b>
+          ${esc(text[1])}
+        </div>
+      `;
+
+      return;
     }
+
+    $('#sellPane').innerHTML = `
+
+      <form id="sellerForm">
+
+        <div class="field">
+          <label>Shop / Trading Name</label>
+          <input id="sName" required placeholder="Kofi Mobile Spares">
+        </div>
+
+        <div class="grid2">
+
+          <div class="field">
+            <label>MoMo Number</label>
+            <input id="sPhone" required inputmode="tel">
+          </div>
+
+          <div class="field">
+            <label>Network</label>
+            <select id="sNet">
+              <option>MTN</option>
+              <option>ATMoney</option>
+              <option>Telecel</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="field">
+          <label>Trading Location</label>
+          <input id="sLoc" required placeholder="Kasoa / Accra">
+        </div>
+
+        <div class="field">
+          <label>What You Stock</label>
+          <textarea id="sStock" required
+            placeholder="Screens, batteries, charging ports…"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Ghana Card Number</label>
+          <input id="sId" required placeholder="GHA-000000000-0">
+          <p class="hint">
+            This information is not shown to buyers.
+          </p>
+        </div>
+
+        <button class="btn" id="applyBtn">
+          Submit Seller Application
+        </button>
+
+      </form>
+    `;
+
+    $('#sellerForm').onsubmit = async e => {
+
+      e.preventDefault();
+
+      const btn = $('#applyBtn');
+
+      try{
+
+        busy(btn,true,'Submit Seller Application');
+
+        await Sellers.apply({
+          shopName:$('#sName').value,
+          payoutPhone:$('#sPhone').value,
+          payoutNet:$('#sNet').value,
+          location:$('#sLoc').value,
+          stockDesc:$('#sStock').value,
+          ghanaCard:$('#sId').value
+        });
+
+        toast('Seller application submitted');
+        loadSellPane();
+
+      }catch(err){
+
+        toast(err.message,true);
+        busy(btn,false,'Submit Seller Application');
+
+      }
+
+    };
+
+  }catch(e){
+
+    $('#sellPane').innerHTML =
+      `<div class="empty"><b>Error</b>${esc(e.message)}</div>`;
+
+  }
+}
+
+/* ---------- seller shop ---------- */
+
+$('#lLocked').onchange = e => {
+
+  $('#lockedFields').style.display =
+    e.target.checked ? '' : 'none';
+
+};
+
+$('#lPhotos').onchange = e => {
+
+  const files = [...e.target.files].slice(0,4);
+
+  $('#photoPreview').innerHTML =
+    files.map(file =>
+      `<img
+        src="${URL.createObjectURL(file)}"
+        style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line)">`
+    ).join('');
+
+  if(e.target.files.length > 4){
+    toast('Only the first 4 photos will be uploaded');
+  }
+
+};
+
+async function loadMyShop(){
+
+  if(!ME) return;
+
+  try{
+
+    const seller = await Sellers.mine();
+
+    $('#shopStatus').textContent =
+      seller ? seller.shop_name : '';
+
+    const listings = await Listings.mine();
+
+    const statusText = {
+      pending:'Awaiting approval',
+      live:'Live',
+      rejected:'Rejected',
+      sold_out:'Sold out',
+      hidden:'Hidden'
+    };
+
+    $('#myListings').innerHTML =
+      listings.length
+        ? listings.map(l => `
+            <div class="qrow">
+
+              <div class="qn">
+
+                <b>${esc(l.name)}</b>
+
+                <div class="pmeta">
+                  <span class="sku">${esc(l.sku)}</span>
+                  <span>${fmt(l.price_pesewas)}</span>
+                  <span>${l.stock} stock</span>
+                  <span>${l.photos?.length || 0} photos</span>
+                </div>
+
+                <div class="pmeta">
+                  <span>${esc(statusText[l.status] || l.status)}</span>
+                </div>
+
+              </div>
+
+            </div>
+          `).join('')
+        : `
+          <div class="empty">
+            <b>No Listings Yet</b>
+            Add your first part.
+          </div>
+        `;
+
+  }catch(e){
+
+    $('#myListings').innerHTML =
+      `<div class="empty"><b>Error</b>${esc(e.message)}</div>`;
+
+  }
+}
+
+$('#listForm').onsubmit = async e => {
+
+  e.preventDefault();
+
+  const btn = $('#listBtn');
+
+  try{
+
+    busy(btn,true,'Submit for Approval');
+
+    const selectedPhotos =
+      [...$('#lPhotos').files].slice(0,4);
+
+    const photos =
+      await Listings.uploadPhotos(selectedPhotos);
 
     let proof = null;
+
     if($('#lLocked').checked){
-      const f = $('#lProof').files[0];
-      if(!f) throw new Error('Locked stock needs an ownership proof file.');
-      if(!$('#lImei').value.trim()) throw new Error('Locked stock needs the donor IMEI.');
-      proof = await Listings.uploadProof(f);
+
+      const proofFile = $('#lProof').files[0];
+
+      if(!proofFile)
+        throw new Error('Ownership proof is required for locked stock.');
+
+      const imei =
+        $('#lImei').value.replace(/\D/g,'');
+
+      if(imei.length !== 15)
+        throw new Error('Donor IMEI must contain exactly 15 digits.');
+
+      proof =
+        await Listings.uploadProof(proofFile);
+
     }
+
     await Listings.create({
-      sku:$('#lSku').value.trim(), name:$('#lName').value.trim(),
-      brand:$('#lBrand').value, category:$('#lCat').value, grade:$('#lGrade').value,
-      priceGHS:parseFloat($('#lPrice').value), stock:parseInt($('#lStock').value),
-      is_locked:$('#lLocked').checked, imei:$('#lImei').value.trim()||null, proof_url:proof,
+
+      sku:$('#lSku').value.trim(),
+      name:$('#lName').value.trim(),
+      brand:$('#lBrand').value,
+      category:$('#lCat').value,
+      grade:$('#lGrade').value,
+      priceGHS:Number($('#lPrice').value),
+      stock:Number($('#lStock').value),
+      is_locked:$('#lLocked').checked,
+      imei:$('#lImei').value.replace(/\D/g,'') || null,
+      proof_url:proof,
       photos
+
     });
-    e.target.reset(); $('#lockedFields').style.display='none'; $('#photoPreview').innerHTML='';
-    toast('Sent for approval'); loadMyShop();
-  }catch(err){ toast(err.message,true); }
-  finally{ busy(btn,false,'Submit for approval'); }
+
+    e.target.reset();
+
+    $('#lockedFields').style.display = 'none';
+    $('#photoPreview').innerHTML = '';
+
+    toast('Listing submitted for admin approval');
+    loadMyShop();
+
+  }catch(err){
+
+    toast(err.message,true);
+
+  }finally{
+
+    busy(btn,false,'Submit for Approval');
+
+  }
+
 };
 
 /* ---------- admin ---------- */
-document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {
-  document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-pressed',x===b));
-  $('#qSellers').style.display  = b.dataset.tab==='sellers'  ? '' : 'none';
-  $('#qListings').style.display = b.dataset.tab==='listings' ? '' : 'none';
-  $('#qPayouts').style.display  = b.dataset.tab==='payouts'  ? '' : 'none';
+
+document.querySelectorAll('[data-tab]').forEach(btn => {
+
+  btn.onclick = () => {
+
+    document.querySelectorAll('[data-tab]').forEach(x =>
+      x.setAttribute('aria-pressed',x === btn ? 'true' : 'false')
+    );
+
+    $('#qSellers').style.display =
+      btn.dataset.tab === 'sellers' ? '' : 'none';
+
+    $('#qListings').style.display =
+      btn.dataset.tab === 'listings' ? '' : 'none';
+
+    $('#qPayouts').style.display =
+      btn.dataset.tab === 'payouts' ? '' : 'none';
+
+  };
+
 });
 
 async function loadAdmin(){
-  const [sellers, listings, payouts] = await Promise.all([
-    Admin.pendingSellers(), Admin.pendingListings(), Admin.payoutsDue()
-  ]);
-  $('#tSellers').textContent  = '('+sellers.length+')';
-  $('#tListings').textContent = '('+listings.length+')';
-  $('#tPayouts').textContent  = '('+payouts.length+')';
 
-  $('#qSellers').innerHTML = sellers.length ? sellers.map(s => `
-    <div class="qrow"><div class="qn">
-      <b>${esc(s.shop_name)}</b>
-      <div class="pmeta"><span>${esc(s.location)}</span><span>${esc(s.payout_net)} ${esc(s.payout_phone)}</span><span>${esc(s.ghana_card)}</span></div>
-      <div class="pmeta"><span style="color:var(--text)">${esc(s.stock_desc)}</span></div>
-    </div><div class="qacts">
-      <button class="btn sm" data-ok="${s.id}">Approve</button>
-      <button class="btn sm danger" data-no="${s.id}">Reject</button></div></div>`).join('')
-    : `<div class="empty" style="background:none"><b>Queue clear</b>No seller applications waiting.</div>`;
+  try{
 
-  $('#qListings').innerHTML = listings.length ? listings.map(l => `
-    <div class="qrow">
-      ${l.photos && l.photos.length ? `<img class="thumb" src="${esc(l.photos[0])}" alt="" loading="lazy">` : `<div class="thumb ph">◫</div>`}
-      <div class="qn">
-      <b>${esc(l.name)}</b>
-      <div class="pmeta"><span class="sku">${esc(l.sku)}</span><span>${esc(l.sellers?.shop_name??'')}</span><span>${fmt(l.price_pesewas)}</span><span>Grade ${l.grade}</span></div>
-      ${l.is_locked ? `<div class="pmeta"><span class="flag ${l.proof_url&&l.imei?'':'bad'}">${l.proof_url&&l.imei?'LOCKED — IMEI '+esc(l.imei):'LOCKED — NO PROOF OR IMEI'}</span></div>` : ''}
-    </div><div class="qacts">
-      ${l.proof_url ? `<button class="btn sm ghost" data-proof="${esc(l.proof_url)}">View proof</button>` : ''}
-      <button class="btn sm" data-lok="${l.id}">Approve</button>
-      <button class="btn sm danger" data-lno="${l.id}">Reject</button></div></div>`).join('')
-    : `<div class="empty" style="background:none"><b>Queue clear</b>No listings waiting.</div>`;
+    const [sellers,listings,payouts] =
+      await Promise.all([
+        Admin.pendingSellers(),
+        Admin.pendingListings(),
+        Admin.payoutsDue()
+      ]);
 
-  $('#qPayouts').innerHTML = payouts.length ? payouts.map(o => `
-    <div class="qrow"><div class="qn">
-      <b>${esc(o.ref)}</b>
-      <div class="pmeta"><span>Buyer confirmed ${new Date(o.confirmed_at).toLocaleDateString('en-GB')}</span></div>
-      ${o.order_items.map(i => `<div class="pmeta"><span>${esc(i.sellers?.shop_name??'')}</span><span>${esc(i.sellers?.payout_net??'')} ${esc(i.sellers?.payout_phone??'')}</span><span style="color:var(--green)">pay ${fmt(i.payout_pesewas)}</span><span>you keep ${fmt(i.commission_pesewas)}</span></div>`).join('')}
-    </div><div class="qacts"><button class="btn sm" data-paid="${o.id}">Marked as paid</button></div></div>`).join('')
-    : `<div class="empty" style="background:none"><b>Nothing owed</b>All confirmed orders have been paid out.</div>`;
+    $('#tSellers').textContent =
+      `(${sellers.length})`;
 
-  document.querySelectorAll('[data-ok]').forEach(b => b.onclick = () => decide(b, () => Admin.decideSeller(b.dataset.ok, true), 'Seller approved'));
-  document.querySelectorAll('[data-no]').forEach(b => b.onclick = () => {
-    const why = prompt('Reason for rejection (the seller sees this):') ?? '';
-    decide(b, () => Admin.decideSeller(b.dataset.no, false, why), 'Application rejected');
-  });
-  document.querySelectorAll('[data-lok]').forEach(b => b.onclick = () => decide(b, () => Admin.decideListing(b.dataset.lok, true), 'Listing is live'));
-  document.querySelectorAll('[data-lno]').forEach(b => b.onclick = () => decide(b, () => Admin.decideListing(b.dataset.lno, false), 'Listing rejected'));
-  document.querySelectorAll('[data-paid]').forEach(b => b.onclick = () => decide(b, () => Admin.markPaidOut(b.dataset.paid), 'Marked as paid out'));
-  document.querySelectorAll('[data-proof]').forEach(b => b.onclick = async () => {
-    const url = await Admin.proofUrl(b.dataset.proof);
-    url ? window.open(url,'_blank','noopener') : toast('Could not open that file', true);
-  });
+    $('#tListings').textContent =
+      `(${listings.length})`;
+
+    $('#tPayouts').textContent =
+      `(${payouts.length})`;
+
+    $('#qSellers').innerHTML =
+      sellers.length
+        ? sellers.map(s => `
+
+          <div class="qrow">
+
+            <div class="qn">
+
+              <b>${esc(s.shop_name)}</b>
+
+              <div class="pmeta">
+                <span>${esc(s.location)}</span>
+                <span>${esc(s.payout_net)}</span>
+                <span>${esc(s.payout_phone)}</span>
+              </div>
+
+              <div class="pmeta">
+                <span>${esc(s.stock_desc)}</span>
+              </div>
+
+            </div>
+
+            <div class="qacts">
+
+              <button class="btn sm"
+                data-approve-seller="${esc(s.id)}">
+                Approve
+              </button>
+
+              <button class="btn danger sm"
+                data-reject-seller="${esc(s.id)}">
+                Reject
+              </button>
+
+            </div>
+
+          </div>
+
+        `).join('')
+        : `<div class="empty"><b>Queue Clear</b>No seller applications.</div>`;
+
+    $('#qListings').innerHTML =
+      listings.length
+        ? listings.map(l => `
+
+          <div class="qrow">
+
+            ${
+              l.photos?.length
+                ? `<img class="thumb" src="${esc(l.photos[0])}">`
+                : `<div class="thumb ph">◫</div>`
+            }
+
+            <div class="qn">
+
+              <b>${esc(l.name)}</b>
+
+              <div class="pmeta">
+                <span class="sku">${esc(l.sku)}</span>
+                <span>${esc(l.sellers?.shop_name || '')}</span>
+                <span>${fmt(l.price_pesewas)}</span>
+                <span>Grade ${esc(l.grade)}</span>
+              </div>
+
+              ${
+                l.is_locked
+                  ? `<div class="pmeta">
+                      <span class="flag ${l.proof_url && l.imei ? '' : 'bad'}">
+                        ${l.proof_url && l.imei
+                          ? 'LOCKED — VERIFIED'
+                          : 'LOCKED — MISSING PROOF'}
+                      </span>
+                    </div>`
+                  : ''
+              }
+
+            </div>
+
+            <div class="qacts">
+
+              ${
+                l.proof_url
+                  ? `<button class="btn ghost sm"
+                       data-proof="${esc(l.proof_url)}">
+                       View Proof
+                     </button>`
+                  : ''
+              }
+
+              <button class="btn sm"
+                data-approve-listing="${esc(l.id)}">
+                Approve
+              </button>
+
+              <button class="btn danger sm"
+                data-reject-listing="${esc(l.id)}">
+                Reject
+              </button>
+
+            </div>
+
+          </div>
+
+        `).join('')
+        : `<div class="empty"><b>Queue Clear</b>No listings waiting.</div>`;
+
+    $('#qPayouts').innerHTML =
+      payouts.length
+        ? payouts.map(o => `
+
+          <div class="qrow">
+
+            <div class="qn">
+
+              <b>${esc(o.ref)}</b>
+
+              <div class="pmeta">
+                <span>
+                  Confirmed
+                  ${new Date(o.confirmed_at).toLocaleDateString('en-GB')}
+                </span>
+              </div>
+
+              ${
+                o.order_items.map(i => `
+
+                  <div class="pmeta">
+
+                    <span>${esc(i.sellers?.shop_name || '')}</span>
+
+                    <span>
+                      ${esc(i.sellers?.payout_net || '')}
+                    </span>
+
+                    <span>
+                      ${esc(i.sellers?.payout_phone || '')}
+                    </span>
+
+                    <span style="color:var(--green)">
+                      PAY ${fmt(i.payout_pesewas)}
+                    </span>
+
+                  </div>
+
+                `).join('')
+              }
+
+            </div>
+
+            <div class="qacts">
+
+              <button class="btn sm"
+                data-paid="${esc(o.id)}">
+                Mark Paid
+              </button>
+
+            </div>
+
+          </div>
+
+        `).join('')
+        : `<div class="empty"><b>Nothing Due</b>All payouts are cleared.</div>`;
+
+    bindAdminButtons();
+
+  }catch(e){
+
+    toast(e.message,true);
+
+  }
+
 }
-async function decide(btn, fn, msg){
+
+function bindAdminButtons(){
+
+  document.querySelectorAll('[data-approve-seller]').forEach(btn => {
+
+    btn.onclick = () =>
+      adminAction(
+        btn,
+        () => Admin.decideSeller(
+          btn.dataset.approveSeller,
+          true
+        ),
+        'Seller approved'
+      );
+
+  });
+
+  document.querySelectorAll('[data-reject-seller]').forEach(btn => {
+
+    btn.onclick = () => {
+
+      const reason =
+        prompt('Reason for rejection:') || '';
+
+      adminAction(
+        btn,
+        () => Admin.decideSeller(
+          btn.dataset.rejectSeller,
+          false,
+          reason
+        ),
+        'Seller rejected'
+      );
+
+    };
+
+  });
+
+  document.querySelectorAll('[data-approve-listing]').forEach(btn => {
+
+    btn.onclick = () =>
+      adminAction(
+        btn,
+        () => Admin.decideListing(
+          btn.dataset.approveListing,
+          true
+        ),
+        'Listing approved'
+      );
+
+  });
+
+  document.querySelectorAll('[data-reject-listing]').forEach(btn => {
+
+    btn.onclick = () => {
+
+      const reason =
+        prompt('Reason for rejection:') || '';
+
+      adminAction(
+        btn,
+        () => Admin.decideListing(
+          btn.dataset.rejectListing,
+          false,
+          reason
+        ),
+        'Listing rejected'
+      );
+
+    };
+
+  });
+
+  document.querySelectorAll('[data-paid]').forEach(btn => {
+
+    btn.onclick = () =>
+      adminAction(
+        btn,
+        () => Admin.markPaidOut(btn.dataset.paid),
+        'Payout marked as completed'
+      );
+
+  });
+
+  document.querySelectorAll('[data-proof]').forEach(btn => {
+
+    btn.onclick = async () => {
+
+      try{
+
+        const url =
+          await Admin.proofUrl(btn.dataset.proof);
+
+        if(url){
+          window.open(url,'_blank','noopener');
+        }else{
+          toast('Could not open proof',true);
+        }
+
+      }catch(e){
+        toast(e.message,true);
+      }
+
+    };
+
+  });
+
+}
+
+async function adminAction(btn,fn,message){
+
   const label = btn.textContent;
-  try{ busy(btn,true); await fn(); toast(msg); loadAdmin(); }
-  catch(e){ toast(e.message, true); busy(btn,false,label); }
+
+  try{
+
+    busy(btn,true,label);
+    await fn();
+    toast(message);
+    await loadAdmin();
+
+  }catch(e){
+
+    toast(e.message,true);
+    busy(btn,false,label);
+
+  }
+
 }
 
 /* ---------- boot ---------- */
-async function boot(){
-  try{ ME = await Auth.me(); }catch(_){ ME = null; }
-  if(LINK_ERROR){
-    toast(decodeURIComponent(LINK_ERROR).replace(/\+/g,' ') + ' \u2014 please request a new link', true);
-    history.replaceState(null,'',window.location.pathname);
-  } else if(CAME_FROM_RECOVERY || RECOVERY_FIRED){
-    showNewPassword();
-  }
-  $('#authBtn').textContent = ME ? 'Sign out' : 'Sign in';
-  $('#navOrders').hidden = !ME;
-  $('#navAdmin').hidden  = !(ME?.profile?.is_admin);
-  const s = ME ? await Sellers.mine() : null;
-  $('#navShop').hidden = !(s && s.status==='approved');
-  $('#commLine').textContent = Math.round(COMMISSION*100)+'%';
-  loadLedger();
-}
 
-/* Supabase tells us directly once it has consumed a recovery link.
-   This is the reliable path \u2014 the URL check above is only a fallback. */
-Auth.onRecovery(() => {
-  RECOVERY_FIRED = true;
-  if(!document.getElementById('nGo')) showNewPassword();
-});
+async function boot(){
+
+  try{
+
+    ME = await Auth.me();
+
+  }catch(e){
+
+    ME = null;
+
+  }
+
+  $('#authBtn').textContent =
+    ME ? 'Sign Out' : 'Sign In';
+
+  $('#navOrders').hidden = !ME;
+
+  $('#navAdmin').hidden =
+    !(ME?.profile?.is_admin);
+
+  let seller = null;
+
+  if(ME){
+
+    try{
+      seller = await Sellers.mine();
+    }catch(_){}
+
+  }
+
+  $('#navShop').hidden =
+    !(seller && seller.status === 'approved');
+
+  $('#commLine').textContent =
+    `${Math.round(COMMISSION * 100)}%`;
+
+  await loadLedger();
+
+}
 
 boot();
 </script>
+
 </body>
 </html>

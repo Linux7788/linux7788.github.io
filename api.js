@@ -1,305 +1,1279 @@
 // ============================================================
-// iLinux — Supabase data layer
-// Replaces the in-memory state in the prototype.
-// Load in your page BEFORE your app script:
-//   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-//   <script src="api.js"></script>
+// iLiNuX — Supabase API / Data Layer
+// ============================================================
+//
+// Load BEFORE your main application script:
+//
+// <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+// <script src="api.js"></script>
+//
+// NEVER put:
+// - Telegram bot tokens
+// - Paystack secret keys
+// - Supabase secret/service-role keys
+// in this file.
+//
+// This browser file only uses the Supabase publishable key.
 // ============================================================
 
-const SUPABASE_URL  = 'https://lkxeafrgachxnfwibxjy.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_NKXtOfJbiCdZDFcLfrCszA_laxmVDDv';  // safe to publish — RLS is what protects the data
+const SUPABASE_URL =
+  'https://lkxeafrgachxnfwibxjy.supabase.co';
 
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const SUPABASE_PUBLISHABLE_KEY =
+  'sb_publishable_NKXtOfJbiCdZDFcLfrCszA_laxmVDDv';
 
-// money is stored as whole pesewas so nothing rounds badly
-const toPesewas = ghs => Math.round(ghs * 100);
-const toGHS     = p   => (p / 100);
-const fmt       = p   => '₵' + toGHS(p).toLocaleString('en-GH', {minimumFractionDigits:2});
+if(!window.supabase){
+  throw new Error(
+    'Supabase JS did not load. Check the CDN script before api.js.'
+  );
+}
 
-const COMMISSION = 0.15;   // change in one place
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
 
-// ---------------- auth ----------------
-const Auth = {
-  async signUp(email, password, fullName, phone){
-    const {data, error} = await db.auth.signUp({
-      email, password, options:{data:{full_name:fullName, phone}}
-    });
-    if(error) throw error;
-    return data.user;
-  },
-  async signIn(email, password){
-    const {data, error} = await db.auth.signInWithPassword({email, password});
-    if(error) throw error;
-    return data.user;
-  },
-  async signOut(){ await db.auth.signOut(); },
+// ============================================================
+// CONFIG
+// ============================================================
 
-  // Supabase fires PASSWORD_RECOVERY once it has consumed a reset link
-  onRecovery(cb){
-    db.auth.onAuthStateChange((event) => { if(event === 'PASSWORD_RECOVERY') cb(); });
-  },
+const COMMISSION = 0.15;
 
-  // email a reset link; it brings them back here in recovery mode
-  async requestPasswordReset(email){
-    const {error} = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname
-    });
-    if(error) throw error;
-  },
+const MAX_PHOTO_BYTES =
+  5 * 1024 * 1024;
 
-  // called once Supabase has given them a recovery session
-  async setNewPassword(newPassword){
-    if(!newPassword || newPassword.length < 8)
-      throw new Error('Password must be at least 8 characters.');
-    const {error} = await db.auth.updateUser({password: newPassword});
-    if(error) throw error;
-  },
+const MAX_PHOTOS = 4;
 
-  // resend the signup confirmation if the first never arrived
-  async resendConfirmation(email){
-    const {error} = await db.auth.resend({type:'signup', email});
-    if(error) throw error;
-  },
-  async requestPasswordReset(email){
-    const {error} = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname
-    });
-    if(error) throw error;
-  },
-  async setNewPassword(newPassword){
-    if(!newPassword || newPassword.length < 8)
-      throw new Error('Password must be at least 8 characters.');
-    const {error} = await db.auth.updateUser({password: newPassword});
-    if(error) throw error;
-  },
-  async resendConfirmation(email){
-    const {error} = await db.auth.resend({type:'signup', email});
-    if(error) throw error;
-  },
-  async me(){
-    const {data:{user}} = await db.auth.getUser();
-    if(!user) return null;
-    const {data:profile} = await db.from('profiles').select('*').eq('id', user.id).single();
-    return {...user, profile};
-  },
-  onChange(cb){ db.auth.onAuthStateChange((_e, session) => cb(session?.user ?? null)); }
+const MAX_PROOF_BYTES =
+  10 * 1024 * 1024;
+
+// ============================================================
+// MONEY
+// ============================================================
+
+const toPesewas = value => {
+
+  const amount = Number(value);
+
+  if(!Number.isFinite(amount) || amount < 0){
+    throw new Error('Invalid Ghana cedi amount.');
+  }
+
+  return Math.round(amount * 100);
 };
 
-// ---------------- listings ----------------
-const Listings = {
-  // public parts ledger
-  async browse({q = '', brand = '', category = '', grade = ''} = {}){
-    let query = db.from('listings')
-      .select('*, sellers(shop_name, status)')
-      .eq('status','live').gt('stock', 0)
-      .order('created_at', {ascending:false});
+const toGHS = pesewas =>
+  Number(pesewas || 0) / 100;
 
-    if(brand)    query = query.eq('brand', brand);
-    if(category) query = query.eq('category', category);
-    if(grade)    query = query.eq('grade', grade);
-    if(q)        query = query.or(`name.ilike.%${q}%,sku.ilike.%${q}%`);
+const fmt = pesewas =>
+  '₵' +
+  toGHS(pesewas).toLocaleString(
+    'en-GH',
+    {
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }
+  );
 
-    const {data, error} = await query;
+// ============================================================
+// HELPERS
+// ============================================================
+
+function requireValue(value,message){
+
+  if(
+    value === undefined ||
+    value === null ||
+    String(value).trim() === ''
+  ){
+    throw new Error(message);
+  }
+
+  return value;
+}
+
+function cleanPhone(value){
+
+  return String(value || '')
+    .replace(/\D/g,'');
+}
+
+async function currentUser(){
+
+  const {data,error} =
+    await db.auth.getUser();
+
+  if(error) throw error;
+
+  return data?.user || null;
+}
+
+async function requireUser(){
+
+  const user =
+    await currentUser();
+
+  if(!user){
+    throw new Error('Please sign in first.');
+  }
+
+  return user;
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+
+const Auth = {
+
+  async signUp(
+    email,
+    password,
+    fullName,
+    phone
+  ){
+
+    requireValue(email,'Email is required.');
+    requireValue(password,'Password is required.');
+    requireValue(fullName,'Full name is required.');
+
+    if(String(password).length < 6){
+      throw new Error(
+        'Password must contain at least 6 characters.'
+      );
+    }
+
+    const {data,error} =
+      await db.auth.signUp({
+
+        email:String(email).trim(),
+
+        password,
+
+        options:{
+          data:{
+            full_name:String(fullName).trim(),
+            phone:String(phone || '').trim()
+          }
+        }
+
+      });
+
     if(error) throw error;
-    return data;
+
+    return data.user;
   },
 
-  // seller creates a listing — lands as 'pending'
-  async create(fields){
-    const sellerId = await Sellers.myId();
-    if(!sellerId) throw new Error('You are not an approved seller yet.');
-    if(fields.is_locked && (!fields.proof_url || !fields.imei))
-      throw new Error('Locked stock needs an ownership proof and IMEI.');
+  async signIn(email,password){
 
-    const {data, error} = await db.from('listings').insert({
-      seller_id: sellerId,
-      sku: fields.sku, name: fields.name, brand: fields.brand,
-      category: fields.category, grade: fields.grade,
-      price_pesewas: toPesewas(fields.priceGHS),
-      stock: fields.stock ?? 1,
-      is_locked: !!fields.is_locked,
-      proof_url: fields.proof_url ?? null,
-      imei: fields.imei ?? null,
-      photos: fields.photos ?? []
-    }).select().single();
+    requireValue(email,'Email is required.');
+    requireValue(password,'Password is required.');
+
+    const {data,error} =
+      await db.auth.signInWithPassword({
+
+        email:String(email).trim(),
+
+        password
+
+      });
+
     if(error) throw error;
+
+    return data.user;
+  },
+
+  async signOut(){
+
+    const {error} =
+      await db.auth.signOut();
+
+    if(error) throw error;
+  },
+
+  async me(){
+
+    const user =
+      await currentUser();
+
+    if(!user) return null;
+
+    const {data:profile,error} =
+      await db
+        .from('profiles')
+        .select('*')
+        .eq('id',user.id)
+        .maybeSingle();
+
+    if(error) throw error;
+
+    return {
+      ...user,
+      profile:profile || null
+    };
+  },
+
+  onChange(callback){
+
+    return db.auth.onAuthStateChange(
+      (_event,session) =>
+        callback(session?.user || null)
+    );
+  }
+
+};
+
+// ============================================================
+// LISTINGS
+// ============================================================
+
+const Listings = {
+
+  async browse({
+    q='',
+    brand='',
+    category='',
+    grade=''
+  } = {}){
+
+    let query =
+      db
+        .from('listings')
+        .select(`
+          *,
+          sellers(
+            shop_name,
+            status
+          )
+        `)
+        .eq('status','live')
+        .gt('stock',0)
+        .order('created_at',{
+          ascending:false
+        });
+
+    if(brand)
+      query = query.eq('brand',brand);
+
+    if(category)
+      query = query.eq('category',category);
+
+    if(grade)
+      query = query.eq('grade',grade);
+
+    const term =
+      String(q || '').trim();
+
+    if(term){
+
+      const safe =
+        term
+          .replace(/\\/g,'\\\\')
+          .replace(/%/g,'\\%')
+          .replace(/_/g,'\\_')
+          .replace(/,/g,'\\,');
+
+      query =
+        query.or(
+          `name.ilike.%${safe}%,sku.ilike.%${safe}%`
+        );
+
+    }
+
+    const {data,error} =
+      await query;
+
+    if(error) throw error;
+
+    return data || [];
+  },
+
+  async create(fields={}){
+
+    const sellerId =
+      await Sellers.myId();
+
+    if(!sellerId){
+
+      throw new Error(
+        'You are not an approved seller.'
+      );
+
+    }
+
+    requireValue(
+      fields.sku,
+      'SKU is required.'
+    );
+
+    requireValue(
+      fields.name,
+      'Part name is required.'
+    );
+
+    requireValue(
+      fields.brand,
+      'Brand is required.'
+    );
+
+    requireValue(
+      fields.category,
+      'Category is required.'
+    );
+
+    const price =
+      toPesewas(fields.priceGHS);
+
+    if(price <= 0){
+      throw new Error(
+        'Price must be greater than zero.'
+      );
+    }
+
+    const stock =
+      Number.parseInt(
+        fields.stock,
+        10
+      );
+
+    if(!Number.isInteger(stock) || stock < 1){
+      throw new Error(
+        'Stock must be at least 1.'
+      );
+    }
+
+    const locked =
+      Boolean(fields.is_locked);
+
+    let imei = null;
+
+    if(locked){
+
+      imei =
+        String(fields.imei || '')
+          .replace(/\D/g,'');
+
+      if(imei.length !== 15){
+        throw new Error(
+          'Locked stock requires a valid 15-digit IMEI.'
+        );
+      }
+
+      if(!fields.proof_url){
+        throw new Error(
+          'Locked stock requires ownership proof.'
+        );
+      }
+
+    }
+
+    const photos =
+      Array.isArray(fields.photos)
+        ? fields.photos.slice(0,MAX_PHOTOS)
+        : [];
+
+    const {data,error} =
+      await db
+        .from('listings')
+        .insert({
+
+          seller_id:sellerId,
+
+          sku:String(fields.sku).trim(),
+
+          name:String(fields.name).trim(),
+
+          brand:String(fields.brand).trim(),
+
+          category:String(fields.category).trim(),
+
+          grade:
+            fields.grade === 'B'
+              ? 'B'
+              : 'A',
+
+          price_pesewas:price,
+
+          stock,
+
+          is_locked:locked,
+
+          proof_url:
+            fields.proof_url || null,
+
+          imei,
+
+          photos
+
+        })
+        .select()
+        .single();
+
+    if(error) throw error;
+
     await Notify.adminNewListing(data);
+
     return data;
   },
 
   async mine(){
-    const sellerId = await Sellers.myId();
+
+    const sellerId =
+      await Sellers.myId();
+
     if(!sellerId) return [];
-    const {data, error} = await db.from('listings')
-      .select('*').eq('seller_id', sellerId).order('created_at',{ascending:false});
+
+    const {data,error} =
+      await db
+        .from('listings')
+        .select('*')
+        .eq('seller_id',sellerId)
+        .order('created_at',{
+          ascending:false
+        });
+
     if(error) throw error;
-    return data;
+
+    return data || [];
   },
 
-  // product photos live in a public bucket — buyers must be able to see them.
-  // Returns public URLs ready to drop straight into an <img src>.
   async uploadPhotos(files){
-    const {data:{user}} = await db.auth.getUser();
+
+    const user =
+      await requireUser();
+
+    const picked =
+      Array.from(files || [])
+        .slice(0,MAX_PHOTOS);
+
     const urls = [];
-    for(const f of files){
-      if(f.size > 5 * 1024 * 1024) throw new Error(`${f.name} is over 5MB. Please use a smaller photo.`);
-      const ext  = (f.name.split('.').pop() || 'jpg').toLowerCase();
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
-      const {error} = await db.storage.from('photos').upload(path, f, {contentType:f.type});
+
+    for(const file of picked){
+
+      if(file.size > MAX_PHOTO_BYTES){
+
+        throw new Error(
+          `${file.name} is larger than 5MB.`
+        );
+
+      }
+
+      if(!file.type.startsWith('image/')){
+
+        throw new Error(
+          `${file.name} is not an image.`
+        );
+
+      }
+
+      const ext =
+        (file.name.split('.').pop() || 'jpg')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g,'');
+
+      const unique =
+        typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : Math.random()
+              .toString(36)
+              .slice(2);
+
+      const path =
+        `${user.id}/${Date.now()}-${unique}.${ext || 'jpg'}`;
+
+      const {error} =
+        await db
+          .storage
+          .from('photos')
+          .upload(
+            path,
+            file,
+            {
+              contentType:file.type,
+              upsert:false
+            }
+          );
+
       if(error) throw error;
-      urls.push(db.storage.from('photos').getPublicUrl(path).data.publicUrl);
+
+      const {data} =
+        db
+          .storage
+          .from('photos')
+          .getPublicUrl(path);
+
+      urls.push(data.publicUrl);
     }
+
     return urls;
   },
 
-  // upload an ownership proof, returns the storage path
   async uploadProof(file){
-    const {data:{user}} = await db.auth.getUser();
-    const path = `${user.id}/${Date.now()}-${file.name}`;
-    const {error} = await db.storage.from('proofs').upload(path, file);
+
+    const user =
+      await requireUser();
+
+    if(!file){
+      throw new Error(
+        'Ownership proof is required.'
+      );
+    }
+
+    const allowed = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
+
+    if(!allowed.includes(file.type)){
+
+      throw new Error(
+        'Proof must be PDF, JPG, PNG or WEBP.'
+      );
+
+    }
+
+    if(file.size > MAX_PROOF_BYTES){
+
+      throw new Error(
+        'Ownership proof must be 10MB or smaller.'
+      );
+
+    }
+
+    const safeName =
+      file.name.replace(
+        /[^a-zA-Z0-9._-]/g,
+        '_'
+      );
+
+    const unique =
+      typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : Math.random()
+            .toString(36)
+            .slice(2);
+
+    const path =
+      `${user.id}/${Date.now()}-${unique}-${safeName}`;
+
+    const {error} =
+      await db
+        .storage
+        .from('proofs')
+        .upload(
+          path,
+          file,
+          {
+            contentType:file.type,
+            upsert:false
+          }
+        );
+
     if(error) throw error;
+
     return path;
   }
+
 };
 
-// ---------------- sellers ----------------
+// ============================================================
+// SELLERS
+// ============================================================
+
 const Sellers = {
-  async apply({shopName, payoutPhone, payoutNet, location, stockDesc, ghanaCard}){
-    const {data:{user}} = await db.auth.getUser();
-    if(!user) throw new Error('Sign in first.');
-    const {data, error} = await db.from('sellers').insert({
-      user_id:user.id, shop_name:shopName, payout_phone:payoutPhone,
-      payout_net:payoutNet, location, stock_desc:stockDesc, ghana_card:ghanaCard
-    }).select().single();
+
+  async apply({
+    shopName,
+    payoutPhone,
+    payoutNet,
+    location,
+    stockDesc,
+    ghanaCard
+  } = {}){
+
+    const user =
+      await requireUser();
+
+    requireValue(
+      shopName,
+      'Shop name is required.'
+    );
+
+    requireValue(
+      payoutPhone,
+      'MoMo payout number is required.'
+    );
+
+    requireValue(
+      location,
+      'Trading location is required.'
+    );
+
+    requireValue(
+      stockDesc,
+      'Stock description is required.'
+    );
+
+    requireValue(
+      ghanaCard,
+      'Ghana Card number is required.'
+    );
+
+    const phone =
+      cleanPhone(payoutPhone);
+
+    if(phone.length < 9){
+      throw new Error(
+        'Enter a valid MoMo number.'
+      );
+    }
+
+    const networks = [
+      'MTN',
+      'ATMoney',
+      'Telecel'
+    ];
+
+    if(!networks.includes(payoutNet)){
+      throw new Error(
+        'Invalid mobile money network.'
+      );
+    }
+
+    const existing =
+      await this.mine();
+
+    if(existing){
+
+      throw new Error(
+        `You already have a seller application (${existing.status}).`
+      );
+
+    }
+
+    const {data,error} =
+      await db
+        .from('sellers')
+        .insert({
+
+          user_id:user.id,
+
+          shop_name:
+            String(shopName).trim(),
+
+          payout_phone:phone,
+
+          payout_net:payoutNet,
+
+          location:
+            String(location).trim(),
+
+          stock_desc:
+            String(stockDesc).trim(),
+
+          ghana_card:
+            String(ghanaCard).trim()
+
+        })
+        .select()
+        .single();
+
     if(error) throw error;
-    await Notify.adminNewSeller(data);   // Telegram ping
+
+    await Notify.adminNewSeller(data);
+
     return data;
   },
+
   async mine(){
-    const {data} = await db.from('sellers').select('*').maybeSingle();
-    return data;
+
+    const user =
+      await currentUser();
+
+    if(!user) return null;
+
+    const {data,error} =
+      await db
+        .from('sellers')
+        .select('*')
+        .eq('user_id',user.id)
+        .maybeSingle();
+
+    if(error) throw error;
+
+    return data || null;
   },
+
   async myId(){
-    const s = await this.mine();
-    return s && s.status === 'approved' ? s.id : null;
+
+    const seller =
+      await this.mine();
+
+    return seller?.status === 'approved'
+      ? seller.id
+      : null;
   }
+
 };
 
-// ---------------- orders ----------------
+// ============================================================
+// ORDERS
+// ============================================================
+//
+// IMPORTANT:
+// The browser no longer calculates the authoritative order
+// price. The database create_order() function reads prices and
+// stock directly from listings.
+//
+// ============================================================
+
 const Orders = {
-  async create({items, buyerName, buyerPhone, deliveryArea, momoNetwork}){
-    const {data:{user}} = await db.auth.getUser();
-    if(!user) throw new Error('Sign in to place an order.');
 
-    const subtotal = items.reduce((a,i) => a + i.price_pesewas * i.qty, 0);
-    const delivery = subtotal > 50000 ? 0 : 2500;   // free over ₵500
-    const ref = 'ILX-' + Math.random().toString(36).slice(2,7).toUpperCase();
+  async create({
+    items,
+    buyerName,
+    buyerPhone,
+    deliveryArea,
+    momoNetwork
+  } = {}){
 
-    const {data:order, error} = await db.from('orders').insert({
-      ref, buyer_id:user.id, buyer_name:buyerName, buyer_phone:buyerPhone,
-      delivery_area:deliveryArea, momo_network:momoNetwork,
-      subtotal_pesewas:subtotal, delivery_pesewas:delivery,
-      total_pesewas: subtotal + delivery
-    }).select().single();
+    const user =
+      await requireUser();
+
+    if(!Array.isArray(items) || !items.length){
+
+      throw new Error(
+        'Your cart is empty.'
+      );
+
+    }
+
+    requireValue(
+      buyerName,
+      'Delivery name is required.'
+    );
+
+    requireValue(
+      buyerPhone,
+      'MoMo number is required.'
+    );
+
+    requireValue(
+      deliveryArea,
+      'Delivery area is required.'
+    );
+
+    const phone =
+      cleanPhone(buyerPhone);
+
+    if(phone.length < 9){
+      throw new Error(
+        'Enter a valid MoMo number.'
+      );
+    }
+
+    const networks = [
+      'MTN',
+      'ATMoney',
+      'Telecel'
+    ];
+
+    if(!networks.includes(momoNetwork)){
+      throw new Error(
+        'Invalid mobile money network.'
+      );
+    }
+
+    const cleanItems =
+      items.map(item => {
+
+        const qty =
+          Number.parseInt(
+            item.qty,
+            10
+          );
+
+        if(!item.id){
+          throw new Error(
+            'Invalid cart item.'
+          );
+        }
+
+        if(!Number.isInteger(qty) || qty < 1){
+          throw new Error(
+            'Invalid item quantity.'
+          );
+        }
+
+        return {
+          id:item.id,
+          qty
+        };
+
+      });
+
+    const {data,error} =
+      await db.rpc(
+        'create_order',
+        {
+          p_items:cleanItems,
+          p_buyer_name:
+            String(buyerName).trim(),
+          p_buyer_phone:phone,
+          p_delivery_area:
+            String(deliveryArea).trim(),
+          p_momo_network:momoNetwork
+        }
+      );
+
     if(error) throw error;
 
-    const rows = items.map(i => {
-      const gross = i.price_pesewas * i.qty;
-      const commission = Math.round(gross * COMMISSION);
-      return {
-        order_id:order.id, listing_id:i.id, seller_id:i.seller_id,
-        sku:i.sku, name:i.name, unit_pesewas:i.price_pesewas, qty:i.qty,
-        commission_pesewas:commission, payout_pesewas:gross - commission
-      };
-    });
-    const {error:e2} = await db.from('order_items').insert(rows);
-    if(e2) throw e2;
+    if(!data){
+      throw new Error(
+        'Order creation failed.'
+      );
+    }
 
-    return order;   // hand order.ref + total to Paystack next
-  },
-
-  async mine(){
-    const {data, error} = await db.from('orders')
-      .select('*, order_items(*)').order('created_at',{ascending:false});
-    if(error) throw error;
     return data;
   },
 
-  // buyer releases the money
+  async mine(){
+
+    const user =
+      await requireUser();
+
+    const {data,error} =
+      await db
+        .from('orders')
+        .select(`
+          *,
+          order_items(*)
+        `)
+        .eq('buyer_id',user.id)
+        .order('created_at',{
+          ascending:false
+        });
+
+    if(error) throw error;
+
+    return data || [];
+  },
+
   async confirmDelivery(ref){
-    const {error} = await db.rpc('confirm_delivery', {order_ref: ref});
+
+    requireValue(
+      ref,
+      'Order reference is required.'
+    );
+
+    const {error} =
+      await db.rpc(
+        'confirm_delivery',
+        {
+          order_ref:
+            String(ref).trim()
+        }
+      );
+
     if(error) throw error;
   }
+
 };
 
-// ---------------- admin ----------------
+// ============================================================
+// PAYMENTS
+// ============================================================
+
+const Payments = {
+
+  async start({
+    orderRef,
+    phone,
+    network
+  }){
+
+    requireValue(
+      orderRef,
+      'Order reference is required.'
+    );
+
+    requireValue(
+      phone,
+      'MoMo number is required.'
+    );
+
+    const provider = {
+
+      MTN:'mtn',
+
+      ATMoney:'atl',
+
+      Telecel:'vod'
+
+    }[network];
+
+    if(!provider){
+
+      throw new Error(
+        'Unsupported MoMo network.'
+      );
+
+    }
+
+    const {data,error} =
+      await db.functions.invoke(
+        'paystack-init',
+        {
+          body:{
+            order_ref:String(orderRef),
+            momo_phone:cleanPhone(phone),
+            momo_network:provider
+          }
+        }
+      );
+
+    if(error){
+
+      throw new Error(
+        error.message ||
+        'Could not start payment.'
+      );
+
+    }
+
+    if(data?.error){
+
+      throw new Error(
+        data.error
+      );
+
+    }
+
+    return data;
+  }
+
+};
+
+// ============================================================
+// ADMIN
+// ============================================================
+
 const Admin = {
+
   async pendingSellers(){
-    const {data} = await db.from('sellers').select('*').eq('status','pending')
-      .order('created_at',{ascending:true});
-    return data ?? [];
+
+    const {data,error} =
+      await db
+        .from('sellers')
+        .select('*')
+        .eq('status','pending')
+        .order('created_at',{
+          ascending:true
+        });
+
+    if(error) throw error;
+
+    return data || [];
   },
+
   async pendingListings(){
-    const {data} = await db.from('listings')
-      .select('*, sellers(shop_name)').eq('status','pending')
-      .order('created_at',{ascending:true});
-    return data ?? [];
+
+    const {data,error} =
+      await db
+        .from('listings')
+        .select(`
+          *,
+          sellers(shop_name)
+        `)
+        .eq('status','pending')
+        .order('created_at',{
+          ascending:true
+        });
+
+    if(error) throw error;
+
+    return data || [];
   },
-  async decideSeller(id, approve, reason = null){
-    const {data:{user}} = await db.auth.getUser();
-    const {error} = await db.from('sellers').update({
-      status: approve ? 'approved' : 'rejected',
-      reviewed_by:user.id, reviewed_at:new Date().toISOString(), reject_reason:reason
-    }).eq('id', id);
+
+  async decideSeller(
+    id,
+    approve,
+    reason=null
+  ){
+
+    const user =
+      await requireUser();
+
+    if(!id){
+      throw new Error(
+        'Seller id is required.'
+      );
+    }
+
+    const {error} =
+      await db
+        .from('sellers')
+        .update({
+
+          status:
+            approve
+              ? 'approved'
+              : 'rejected',
+
+          reviewed_by:user.id,
+
+          reviewed_at:
+            new Date().toISOString(),
+
+          reject_reason:
+            approve
+              ? null
+              : (
+                  reason ||
+                  'Application not approved.'
+                )
+
+        })
+        .eq('id',id)
+        .eq('status','pending');
+
     if(error) throw error;
   },
-  async decideListing(id, approve, reason = null){
-    const {data:{user}} = await db.auth.getUser();
-    const {error} = await db.from('listings').update({
-      status: approve ? 'live' : 'rejected',
-      reviewed_by:user.id, reviewed_at:new Date().toISOString()
-    }).eq('id', id);
-    // the DB blocks approving locked stock with no proof — surface that plainly
-    if(error) throw new Error(
-      error.message.includes('locked_needs_proof')
-        ? 'This listing is from a locked device and has no ownership proof or IMEI. It cannot go live.'
-        : error.message);
+
+  async decideListing(
+    id,
+    approve,
+    reason=null
+  ){
+
+    const user =
+      await requireUser();
+
+    if(!id){
+      throw new Error(
+        'Listing id is required.'
+      );
+    }
+
+    const {error} =
+      await db
+        .from('listings')
+        .update({
+
+          status:
+            approve
+              ? 'live'
+              : 'rejected',
+
+          reviewed_by:user.id,
+
+          reviewed_at:
+            new Date().toISOString(),
+
+          reject_reason:
+            approve
+              ? null
+              : (
+                  reason ||
+                  'Listing rejected.'
+                )
+
+        })
+        .eq('id',id)
+        .eq('status','pending');
+
+    if(error){
+
+      const message =
+        String(error.message || '');
+
+      if(
+        message.includes(
+          'locked_needs_proof'
+        )
+      ){
+
+        throw new Error(
+          'Locked listing requires ownership proof and IMEI.'
+        );
+
+      }
+
+      throw error;
+    }
   },
-  // orders you still owe a seller for
+
   async payoutsDue(){
-    const {data} = await db.from('orders')
-      .select('*, order_items(*, sellers(shop_name, payout_phone, payout_net))')
-      .eq('status','delivered').eq('payout_done', false);
-    return data ?? [];
+
+    const {data,error} =
+      await db
+        .from('orders')
+        .select(`
+          *,
+          order_items(
+            *,
+            sellers(
+              shop_name,
+              payout_phone,
+              payout_net
+            )
+          )
+        `)
+        .eq('status','delivered')
+        .eq('payout_done',false)
+        .order('confirmed_at',{
+          ascending:true
+        });
+
+    if(error) throw error;
+
+    return data || [];
   },
+
   async markPaidOut(orderId){
-    await db.from('orders').update({payout_done:true}).eq('id', orderId);
+
+    if(!orderId){
+      throw new Error(
+        'Order id is required.'
+      );
+    }
+
+    const {error} =
+      await db
+        .from('orders')
+        .update({
+          payout_done:true
+        })
+        .eq('id',orderId)
+        .eq('status','delivered')
+        .eq('payout_done',false);
+
+    if(error) throw error;
   },
-  // signed link so you can view an ownership proof
+
   async proofUrl(path){
-    const {data} = await db.storage.from('proofs').createSignedUrl(path, 300);
-    return data?.signedUrl;
+
+    if(!path) return null;
+
+    const {data,error} =
+      await db
+        .storage
+        .from('proofs')
+        .createSignedUrl(
+          path,
+          300
+        );
+
+    if(error) throw error;
+
+    return data?.signedUrl || null;
   }
+
 };
 
-// ---------------- Telegram alerts ----------------
-// Calls a Supabase Edge Function — the bot token must NEVER sit in this file.
+// ============================================================
+// TELEGRAM NOTIFICATIONS
+// ============================================================
+
 const Notify = {
-  async adminNewSeller(s){
+
+  async adminNewSeller(seller){
+
     try{
-      await db.functions.invoke('notify-admin', {
-        body:{ type:'seller', id:s.id, name:s.shop_name, location:s.location,
-               payout_net:s.payout_net, payout_phone:s.payout_phone, stock_desc:s.stock_desc }
-      });
-    }catch(e){ console.warn('Telegram alert failed', e); }
+
+      await db.functions.invoke(
+        'notify-admin',
+        {
+          body:{
+            type:'seller',
+            id:seller.id,
+            name:seller.shop_name,
+            location:seller.location,
+            payout_net:seller.payout_net,
+            payout_phone:seller.payout_phone,
+            stock_desc:seller.stock_desc
+          }
+        }
+      );
+
+    }catch(error){
+
+      console.warn(
+        'Telegram seller notification failed:',
+        error
+      );
+
+    }
+
   },
-  async adminNewListing(l){
+
+  async adminNewListing(listing){
+
     try{
-      await db.functions.invoke('notify-admin', {
-        body:{ type:'listing', id:l.id, name:l.name, sku:l.sku,
-               price_pesewas:l.price_pesewas, locked:l.is_locked,
-               proof:!!l.proof_url, imei:l.imei }
-      });
-    }catch(e){ console.warn('Telegram alert failed', e); }
+
+      await db.functions.invoke(
+        'notify-admin',
+        {
+          body:{
+            type:'listing',
+            id:listing.id,
+            name:listing.name,
+            sku:listing.sku,
+            price_pesewas:
+              listing.price_pesewas,
+            locked:
+              listing.is_locked,
+            proof:
+              Boolean(listing.proof_url),
+            imei:
+              listing.imei
+          }
+        }
+      );
+
+    }catch(error){
+
+      console.warn(
+        'Telegram listing notification failed:',
+        error
+      );
+
+    }
+
   }
+
+};
+
+// ============================================================
+// GLOBAL EXPORT
+// ============================================================
+
+window.iLiNuX = {
+
+  db,
+
+  Auth,
+
+  Listings,
+
+  Sellers,
+
+  Orders,
+
+  Payments,
+
+  Admin,
+
+  Notify,
+
+  fmt,
+
+  toPesewas,
+
+  toGHS,
+
+  COMMISSION
+
 };

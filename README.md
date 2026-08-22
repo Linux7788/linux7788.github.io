@@ -1,76 +1,83 @@
-# iLiNuX Marketplace — Setup Guide
+# iLinux Marketplace — current as of 21 August 2026
 
-This is the first working version of the marketplace: sign up, browse
-listings, submit items for sale, and an admin page for you to approve
-sellers and listings before anything goes public.
+**This folder matches what is live right now.** Replace your old Desktop
+folder with this one.
 
-## What's built
+## Read this before you ever run `git push`
 
-- `auth.html` — sign up / sign in (email + password)
-- `marketplace.html` — public browse page with search + category filters
-- `listing.html` — single listing page, buyer messages seller on WhatsApp to arrange purchase
-- `sell.html` — logged-in users request seller status and submit listings
-- `dashboard.html` — seller sees their own listings and approval status
-- `admin.html` — you review and approve/reject pending sellers and listings
-- `marketplace-style.css` — dark theme with neon-green accents, matching the existing site
-- `supabase-config.js` — shared connection settings and helper functions
-- `supabase-schema.sql` — database setup script (run once)
+Your old folder was pushed once and it wiped the live site. If you push
+from a folder that is behind, it happens again.
 
-## Why WhatsApp-to-buy instead of in-app checkout, for now
+Safest habit — never push from a stale folder:
 
-Building real in-app payment (MoMo via Paystack/Flutterwave) needs a small
-server component to securely verify payments and split money between you
-and sellers — that's a bigger piece of work. For version 1, buyers message
-the seller directly on WhatsApp to arrange payment, the same way your
-current site already works. This gets the marketplace live and testable
-now; in-app checkout can be added as a phase 2 once listings and sellers
-are flowing.
-
-## Setup steps
-
-### 1. Create a free Supabase project
-Go to supabase.com, sign up, create a new project (pick a region close to
-Ghana, e.g. Europe). Save the database password somewhere safe.
-
-### 2. Run the database schema
-In your Supabase project: **SQL Editor → New query**, paste the entire
-contents of `supabase-schema.sql`, and click **Run**.
-
-### 3. Connect the site to your project
-In Supabase: **Settings → API**. Copy your **Project URL** and **anon
-public** key. Open `supabase-config.js` and replace:
-```
-const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+```bash
+cd ~/Desktop/ilinux
+git pull            # get what's live FIRST
+# ...then make changes, then push
 ```
 
-### 4. Push these files to your GitHub repo
-Add all these files to the root of `linux7788.github.io` (same place as
-your existing `index.html`), commit, and push. They'll be live at
-`https://linux7788.github.io/marketplace.html` within a minute or two.
+If you are unsure, upload files through github.com instead. It cannot
+overwrite history the way a force push can.
 
-### 5. Make yourself admin
-Visit `auth.html` on your live site and create your own account. Then in
-Supabase: **Table Editor → profiles**, find your row, and change `role`
-from `buyer` to `admin`. Now `admin.html` will show you the approval
-queue.
+## What is live
 
-### 6. Link the marketplace from your homepage
-Add a nav link in your existing `index.html` pointing to
-`marketplace.html`, e.g. in the `<nav id="main-nav">` section:
-```html
-<a href="marketplace.html">Marketplace</a>
+| Thing | Where |
+|---|---|
+| Landing page | linux7788.github.io (has a Parts Marketplace nav link) |
+| Marketplace | linux7788.github.io/market.html |
+| Database | Supabase project `lkxeafrgachxnfwibxjy` |
+| Telegram bot | approve / reject buttons working |
+| Paystack | live mode, webhook set |
+
+## Files here
+
+| File | What it is |
+|---|---|
+| `market.html` | The marketplace. Goes in your repo root. |
+| `api.js` | Talks to the database. Already has your URL and key. Repo root. |
+| `schema.sql` | Full database schema, including product photos. Already applied. |
+| `supabase/functions/` | The four edge functions. Already deployed. Stays on your Mac. |
+| `telegram-setup.sh` | Only needed if you rebuild from scratch. |
+| `REFERENCE.md` | Manual commands, if you ever want to do it by hand. |
+
+Only `market.html` and `api.js` belong in the GitHub repo. Nothing else.
+
+## The one thing still outstanding
+
+Your Paystack account is **live**. If the secret key stored in Supabase is
+a test key, real payments will fail at the webhook.
+
+Check: Paystack → Settings → API Keys & Webhooks → click the eye on Live
+Secret Key. If it does not match what you gave the setup script:
+
+```bash
+npx supabase secrets set PAYSTACK_SECRET_KEY=sk_live_your_key_here
 ```
 
-## Testing it end to end
-1. Create a second test account (or use a different browser/incognito).
-2. Go to `sell.html` — this marks you as a pending seller.
-3. Log in as your admin account, go to `admin.html`, approve the seller.
-4. Log back in as the test account, submit a listing on `sell.html`.
-5. Approve the listing as admin.
-6. Check `marketplace.html` — the listing should now appear publicly.
+## First real test
 
-## What's next (your call)
-- Real in-app checkout with MoMo (Paystack/Flutterwave) once you're ready
-- Image uploads for listings (Supabase Storage, still free tier)
-- Push notifications or email alerts when a listing is approved
+1. Sign in on market.html
+2. My Shop → list one part you actually have, with photos
+3. Approve it from Telegram
+4. Buy it yourself for a small amount
+5. Confirm delivery, check the payout shows in Admin → Payouts due
+
+Do this with a cheap item before a customer's large order is the first
+live transaction.
+
+## Things worth revisiting
+
+- **15% commission.** On a GHS 420 screen that is GHS 63. Watch whether
+  sellers accept it or drift back to WhatsApp. Change it in one line at
+  the top of `api.js`.
+- **Old files in the repo** — `admin.html`, `auth.html`, `dashboard.html`,
+  `marketplace.html`, `sell.html`, `supabase-config.js`, `script.js`,
+  `.DS_Store`. These belong to the earlier version and point at tables
+  that no longer exist. Deleting them is safe but is your call.
+- **`notify-admin` is callable without a login.** Someone who finds the
+  URL could send you fake alerts. Annoying, not dangerous — the Approve
+  buttons still check the database. Worth tightening later.
+- **`verify-payment`** is an old function still deployed. Unused.
+- **Payout number.** Your seller record uses 024 714 1413. If your MoMo
+  payout number differs, change it in the `sellers` table — that is where
+  your money lands.
