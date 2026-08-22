@@ -33,6 +33,28 @@ const Auth = {
     return data.user;
   },
   async signOut(){ await db.auth.signOut(); },
+
+  // email a reset link; it brings them back here in recovery mode
+  async requestPasswordReset(email){
+    const {error} = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if(error) throw error;
+  },
+
+  // called once Supabase has given them a recovery session
+  async setNewPassword(newPassword){
+    if(!newPassword || newPassword.length < 8)
+      throw new Error('Password must be at least 8 characters.');
+    const {error} = await db.auth.updateUser({password: newPassword});
+    if(error) throw error;
+  },
+
+  // resend the signup confirmation if the first never arrived
+  async resendConfirmation(email){
+    const {error} = await db.auth.resend({type:'signup', email});
+    if(error) throw error;
+  },
   async requestPasswordReset(email){
     const {error} = await db.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + window.location.pathname
