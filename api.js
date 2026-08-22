@@ -34,6 +34,11 @@ const Auth = {
   },
   async signOut(){ await db.auth.signOut(); },
 
+  // Supabase fires PASSWORD_RECOVERY once it has consumed a reset link
+  onRecovery(cb){
+    db.auth.onAuthStateChange((event) => { if(event === 'PASSWORD_RECOVERY') cb(); });
+  },
+
   // email a reset link; it brings them back here in recovery mode
   async requestPasswordReset(email){
     const {error} = await db.auth.resetPasswordForEmail(email, {

@@ -320,6 +320,13 @@ footer .fin span{font-family:var(--mono);font-size:11px}
 <script src="api.js"></script>
 <script>
 const $ = s => document.querySelector(s);
+
+/* Supabase clears the recovery token from the URL as soon as it loads,
+   so read it synchronously here, before anything async runs. */
+const URL_AT_LOAD = window.location.hash + window.location.search;
+const CAME_FROM_RECOVERY = /type=recovery/.test(URL_AT_LOAD);
+const LINK_ERROR = (URL_AT_LOAD.match(/error_description=([^&]+)/) || [])[1];
+let RECOVERY_FIRED = false;
 let ME = null, CART = [], NET = null, LISTINGS = [], payChannel = null;
 
 /* ---------- helpers ---------- */
@@ -830,8 +837,11 @@ async function decide(btn, fn, msg){
 /* ---------- boot ---------- */
 async function boot(){
   try{ ME = await Auth.me(); }catch(_){ ME = null; }
-  if(/type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search)){
-    setTimeout(showNewPassword, 300);
+  if(LINK_ERROR){
+    toast(decodeURIComponent(LINK_ERROR).replace(/\+/g,' ') + ' \u2014 please request a new link', true);
+    history.replaceState(null,'',window.location.pathname);
+  } else if(CAME_FROM_RECOVERY || RECOVERY_FIRED){
+    showNewPassword();
   }
   $('#authBtn').textContent = ME ? 'Sign out' : 'Sign in';
   $('#navOrders').hidden = !ME;
@@ -841,6 +851,14 @@ async function boot(){
   $('#commLine').textContent = Math.round(COMMISSION*100)+'%';
   loadLedger();
 }
+
+/* Supabase tells us directly once it has consumed a recovery link.
+   This is the reliable path \u2014 the URL check above is only a fallback. */
+Auth.onRecovery(() => {
+  RECOVERY_FIRED = true;
+  if(!document.getElementById('nGo')) showNewPassword();
+});
+
 boot();
 </script>
 </body>
