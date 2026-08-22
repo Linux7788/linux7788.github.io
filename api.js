@@ -191,6 +191,65 @@ const Auth = {
     if(error) throw error;
   },
 
+  // Supabase fires PASSWORD_RECOVERY once it consumes a reset link
+  onRecovery(callback){
+    db.auth.onAuthStateChange((event) => {
+      if(event === 'PASSWORD_RECOVERY') callback();
+    });
+  },
+
+  async requestPasswordReset(email){
+
+    requireValue(
+      email,
+      'Email is required.'
+    );
+
+    const {error} =
+      await db.auth.resetPasswordForEmail(
+        String(email).trim(),
+        {
+          redirectTo:
+            window.location.origin +
+            window.location.pathname
+        }
+      );
+
+    if(error) throw error;
+  },
+
+  async setNewPassword(newPassword){
+
+    if(!newPassword || newPassword.length < 8){
+      throw new Error(
+        'Password must be at least 8 characters.'
+      );
+    }
+
+    const {error} =
+      await db.auth.updateUser({
+        password:newPassword
+      });
+
+    if(error) throw error;
+  },
+
+  async resendConfirmation(email){
+
+    requireValue(
+      email,
+      'Email is required.'
+    );
+
+    const {error} =
+      await db.auth.resend({
+        type:'signup',
+        email:String(email).trim()
+      });
+
+    if(error) throw error;
+  },
+
   async me(){
 
     const user =
