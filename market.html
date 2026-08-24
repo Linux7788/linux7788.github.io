@@ -826,6 +826,10 @@ footer .footin{
   .trust{display:grid}
   .trust span{width:100%}
 }
+.spec-row{display:flex;justify-content:space-between;gap:14px;
+  padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.spec-row:last-child{border-bottom:none}
+.spec-row b{color:var(--dim);font-weight:400}
 </style>
 </head>
 
@@ -838,6 +842,8 @@ footer .footin{
     <nav class="nav">
       <button data-go="shop" aria-current="true">Parts</button>
       <button data-go="sell">Sell</button>
+      <button data-go="check">IMEI Check</button>
+      <button data-go="software">Software</button>
       <button data-go="shop-mine" id="navShop" hidden>My Shop</button>
       <button data-go="orders" id="navOrders" hidden>Orders</button>
       <button data-go="admin" id="navAdmin" hidden>Admin</button>
@@ -917,6 +923,43 @@ footer .footin{
       Ownership proof and donor IMEI must be supplied before approval.
     </div>
 
+  </div>
+</section>
+
+<section class="view" id="v-check">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Device Check</h2>
+      <p>Paste an IMEI or serial to see what the handset really is</p>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label>IMEI or serial number</label>
+        <input id="dcQuery" placeholder="15 digit IMEI, or the serial from Settings"
+               autocomplete="off" spellcheck="false">
+        <p class="hint">
+          On the handset, dial <b>*#06#</b> for the IMEI, or read it from
+          Settings &rarr; General &rarr; About.
+        </p>
+      </div>
+      <button class="btn" id="dcGo">Check Device</button>
+    </div>
+    <div id="dcResult" style="margin-top:18px"></div>
+  </div>
+</section>
+
+<section class="view" id="v-software">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Software</h2>
+      <p>Tools and utilities. Each licence registers to one device.</p>
+    </div>
+    <div id="swList"></div>
+    <div class="section-head" style="margin-top:34px">
+      <h2>My Licences</h2>
+      <p>Register a device to unlock the download</p>
+    </div>
+    <div id="swLicenses"></div>
   </div>
 </section>
 
@@ -1227,6 +1270,8 @@ document.querySelectorAll('[data-go]').forEach(btn => {
     if(btn.dataset.go === 'shop-mine') loadMyShop();
     if(btn.dataset.go === 'orders') loadOrders();
     if(btn.dataset.go === 'admin') loadAdmin();
+    if(btn.dataset.go === 'check') loadDeviceCheck();
+    if(btn.dataset.go === 'software') loadSoftware();
   };
 });
 
@@ -1899,6 +1944,178 @@ function renderPay(){
     }
 
   };
+}
+
+/* ---------- device check ---------- */
+
+function loadDeviceCheck(){
+  const go = $('#dcGo');
+  if(!go || go.dataset.wired) return;
+  go.dataset.wired = '1';
+
+  go.onclick = async e => {
+    const label = e.target.textContent;
+    const q = $('#dcQuery').value.trim();
+
+    if(q.replace(/[^0-9A-Za-z]/g,'').length < 8){
+      return toast('Enter a full IMEI or serial number', true);
+    }
+
+    $('#dcResult').innerHTML = '<div class="card"><p class="hint">Checking...</p></div>';
+
+    try{
+      busy(e.target, true, label);
+      const d = await DeviceCheck.lookup(q);
+
+      const row = (k,v) => v
+        ? `<div class="spec-row"><b>${esc(k)}</b><span>${esc(v)}</span></div>`
+        : '';
+
+      $('#dcResult').innerHTML = `
+        <div class="card">
+          <h3 style="margin-bottom:12px">${esc(d.model || 'Device found')}</h3>
+          ${row('Brand', d.brand)}
+          ${row('Capacity', d.capacity)}
+          ${row('Colour', d.colour)}
+          ${row('Serial', d.serial)}
+          ${row('IMEI', d.imei)}
+          ${row('Warranty', d.warranty)}
+          ${row('Purchased', d.purchaseDate)}
+          ${row('Country', d.purchaseCountry)}
+          ${row('SIM lock', d.simLock)}
+          ${row('Find My', d.findMy)}
+          ${row('Blacklist', d.blacklist)}
+          ${d._cached ? '<p class="hint" style="margin-top:12px">Previously checked result.</p>' : ''}
+        </div>`;
+
+    }catch(err){
+      $('#dcResult').innerHTML =
+        `<div class="notice err"><b>Could not check that.</b> ${esc(err.message)}</div>`;
+    }finally{
+      busy(e.target, false, label);
+    }
+  };
+}
+
+/* ---------- software store ---------- */
+
+async function loadSoftware(){
+  $('#swList').innerHTML = '<div class="card"><p class="hint">Loading...</p></div>';
+  try{
+    const items = await Software.browse();
+    $('#swList').innerHTML = items.length ? items.map(s => `
+      <div class="card" style="margin-bottom:12px">
+        <h3>${esc(s.name)} ${s.version ? '<span class="hint">v'+esc(s.version)+'</span>' : ''}</h3>
+        <p class="hint" style="margin:8px 0">${esc(s.summary || '')}</p>
+        <div class="spec-row"><b>Price</b><span>${fmt(s.price_pesewas)}</span></div>
+        <div class="spec-row"><b>Devices per licence</b><span>${s.max_activations}</span></div>
+        <button class="btn" data-buy="${s.id}" style="margin-top:12px">Buy Licence</button>
+      </div>`).join('')
+      : '<div class="empty"><b>Nothing listed yet</b>Software appears here once published.</div>';
+    document.querySelectorAll('[data-buy]').forEach(b =>
+      b.onclick = () => buySoftware(b.dataset.buy, items.find(x => x.id === b.dataset.buy)));
+  }catch(err){
+    $('#swList').innerHTML = `<div class="notice err">${esc(err.message)}</div>`;
+  }
+  loadLicenses();
+}
+
+async function loadLicenses(){
+  if(!ME){
+    $('#swLicenses').innerHTML =
+      '<div class="empty"><b>Sign in</b>Your licences appear here once you have an account.</div>';
+    return;
+  }
+  try{
+    const rows = await Software.myLicenses();
+    $('#swLicenses').innerHTML = rows.length ? rows.map(l => `
+      <div class="card" style="margin-bottom:12px">
+        <h3>${esc(l.software?.name || 'Licence')}</h3>
+        <div class="spec-row"><b>Key</b><span>${esc(l.license_key)}</span></div>
+        <div class="spec-row"><b>Status</b><span>${esc(l.status)}</span></div>
+        ${l.device_serial
+          ? `<div class="spec-row"><b>Device</b><span>${esc(l.device_serial)}</span></div>
+             <button class="btn" data-dl="${l.software_id}" style="margin-top:12px">Download</button>`
+          : `<div class="field" style="margin-top:12px">
+               <label>Register your device serial</label>
+               <input id="ser-${l.id}" placeholder="Serial or IMEI of the machine">
+             </div>
+             <button class="btn" data-act="${l.id}" data-key="${esc(l.license_key)}">Register Device</button>`}
+      </div>`).join('')
+      : '<div class="empty"><b>No licences yet</b>Buy software above and your key appears here.</div>';
+
+    document.querySelectorAll('[data-act]').forEach(b => b.onclick = async e => {
+      const label = e.target.textContent;
+      const serial = $('#ser-' + b.dataset.act).value.trim();
+      try{
+        busy(e.target,true,label);
+        await Software.activate({licenseKey:b.dataset.key, deviceSerial:serial});
+        toast('Device registered. You can download now.');
+        loadLicenses();
+      }catch(err){ toast(err.message,true); busy(e.target,false,label); }
+    });
+
+    document.querySelectorAll('[data-dl]').forEach(b => b.onclick = async e => {
+      const label = e.target.textContent;
+      try{
+        busy(e.target,true,label);
+        const url = await Software.downloadUrl(b.dataset.dl);
+        window.open(url,'_blank','noopener');
+      }catch(err){ toast(err.message,true); }
+      finally{ busy(e.target,false,label); }
+    });
+  }catch(err){
+    $('#swLicenses').innerHTML = `<div class="notice err">${esc(err.message)}</div>`;
+  }
+}
+
+function buySoftware(id, sw){
+  if(!ME){ toast('Sign in to buy',true); return showAuth(); }
+
+  $('#dTitle').textContent = 'Buy ' + (sw?.name || 'Software');
+  $('#dBody').innerHTML = `
+    <div class="field"><label>Network</label>
+      <div class="netpick">
+        <button data-net="MTN" aria-pressed="false">MTN</button>
+        <button data-net="ATMoney" aria-pressed="false">ATMoney</button>
+        <button data-net="Telecel" aria-pressed="false">Telecel</button>
+      </div></div>
+    <div class="field"><label>Mobile money number</label>
+      <input id="swPhone" inputmode="tel" placeholder="024 000 0000"></div>
+    <div class="field"><label>Your name</label>
+      <input id="swName" value="${esc(ME?.profile?.full_name || '')}"></div>
+    <p class="hint">You pay ${fmt(sw?.price_pesewas || 0)}. A licence key is issued once payment clears.</p>`;
+
+  $('#dFoot').innerHTML = '<button class="btn" id="swGo">Pay With Mobile Money</button>';
+
+  let NET = null;
+  document.querySelectorAll('.netpick button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.netpick button').forEach(x =>
+      x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    NET = b.dataset.net;
+  });
+
+  $('#swGo').onclick = async e => {
+    const label = e.target.textContent;
+    if(!NET) return toast('Choose a network',true);
+    const phone = $('#swPhone').value.trim();
+    const name  = $('#swName').value.trim();
+    if(phone.replace(/\D/g,'').length < 9) return toast('Enter a valid number',true);
+    if(!name) return toast('Your name is required',true);
+
+    try{
+      busy(e.target,true,label);
+      const order = await Software.buy({softwareId:id, buyerName:name, buyerPhone:phone, momoNetwork:NET});
+      const pay = await Payments.start({orderRef:order.ref, phone, network:NET});
+      if(pay.status === 'send_otp'){
+        askForOtp(order.ref, pay.display_text || 'Enter the code we texted you.');
+      }else{
+        awaitPayment(order.ref, pay.display_text || 'Approve the request on your phone.');
+      }
+    }catch(err){ toast(err.message,true); busy(e.target,false,label); }
+  };
+
+  openDrawer();
 }
 
 /* ---------- enter the texted code ---------- */
