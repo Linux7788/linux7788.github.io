@@ -947,6 +947,21 @@ const Orders = {
 
 const Payments = {
 
+  // Ghana MoMo often texts the buyer a code instead of a push prompt.
+  // This hands that code back to Paystack to finish the charge.
+  async submitOtp({reference, otp}){
+
+    const {data, error} = await db.functions.invoke('paystack-otp', {
+      body:{ reference, otp }
+    });
+
+    if(error) throw new Error(error.message || 'Could not submit the code.');
+    if(data && data.error) throw new Error(data.error);
+
+    return data;
+  },
+
+
   async start({
     orderRef,
     phone,
@@ -1235,6 +1250,147 @@ const Admin = {
 // ============================================================
 // TELEGRAM NOTIFICATIONS
 // ============================================================
+
+const DeviceCheck = {
+
+  // Accepts an IMEI (15 digits) or an Apple serial. Results are cached
+  // in the database so the same handset is never billed twice.
+  async lookup(query){
+
+    const cleaned = String(query || '')
+      .replace(/\s|-/g, '')
+      .toUpperCase();
+
+    if(cleaned.length < 8){
+      throw new Error('Enter a full IMEI or serial number.');
+    }
+
+    const isImei = /^\d{14,17}$/.test(cleaned);
+
+    // cached?
+    const {data: cached} = await db
+      .from('device_checks')
+      .select('*')
+      .eq('query', cleaned)
+      .eq('ok', true)
+      .maybeSingle();
+
+    if(cached){
+      return {...cached.result, _cached: true, _checkedAt: cached.checked_at};
+    }
+
+    const {data, error} = await db.functions.invoke('device-check', {
+      body:{ query: cleaned, query_type: isImei ? 'imei' : 'serial' }
+    });
+
+    if(error) throw new Error(error.message || 'Lookup failed.');
+    if(data && data.error) throw new Error(data.error);
+
+    return data;
+  }
+};
+
+const Software = {
+
+  async browse(){
+    const {data, error} = await db
+      .from('software')
+      .select('*')
+      .eq('status','live')
+      .order('created_at',{ascending:false});
+    if(error) throw error;
+    return data || [];
+  },
+
+  async buy({softwareId, buyerName, buyerPhone, momoNetwork}){
+    const {data, error} = await db.rpc('create_software_order',{
+      p_software_id : softwareId,
+      p_buyer_name  : buyerName,
+      p_buyer_phone : buyerPhone,
+      p_momo_network: momoNetwork
+    });
+    if(error) throw error;
+    return Array.isArray(data) ? data[0] : data;
+  },
+
+  async myLicenses(){
+    const {data, error} = await db
+      .from('licenses')
+      .select('*, software(name, version, requires_device, max_activations)')
+      .order('created_at',{ascending:false});
+    if(error) throw error;
+    return data || [];
+  },
+
+  // Binds the key to one device. First serial wins.
+  async activate({licenseKey, deviceSerial, deviceLabel}){
+    const {data, error} = await db.rpc('activate_license',{
+      p_license_key  : licenseKey,
+      p_device_serial: deviceSerial,
+      p_device_label : deviceLabel || null
+    });
+    if(error) throw error;
+    return Array.isArray(data) ? data[0] : data;
+  },
+
+  // Short-lived signed link. The database refuses unless you own a
+  // licence and, where required, have registered a device.
+  async downloadUrl(softwareId){
+
+    const {data: path, error} = await db.rpc('my_download_path',{
+      p_software_id: softwareId
+    });
+    if(error) throw error;
+    if(!path) throw new Error('No file has been uploaded for this yet.');
+
+    const {data: signed, error: e2} = await db
+      .storage.from('software')
+      .createSignedUrl(path, 300);
+
+    if(e2) throw e2;
+    return signed.signedUrl;
+  },
+
+  // --- admin ---
+  async adminList(){
+    const {data, error} = await db
+      .from('software').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    return data || [];
+  },
+
+  async adminSave(fields){
+    const row = {
+      name           : fields.name,
+      slug           : fields.slug,
+      summary        : fields.summary || null,
+      description    : fields.description || null,
+      version        : fields.version || null,
+      price_pesewas  : Math.round(Number(fields.priceGHS) * 100),
+      requires_device: fields.requiresDevice !== false,
+      max_activations: Number(fields.maxActivations) || 1,
+      status         : fields.status || 'draft'
+    };
+    if(fields.filePath) row.file_path = fields.filePath;
+    if(fields.fileSize) row.file_size_bytes = fields.fileSize;
+
+    const q = fields.id
+      ? db.from('software').update(row).eq('id', fields.id)
+      : db.from('software').insert(row);
+
+    const {data, error} = await q.select().single();
+    if(error) throw error;
+    return data;
+  },
+
+  async adminUpload(file){
+    const path = `${Date.now()}-${file.name.replace(/[^\w.\-]/g,'_')}`;
+    const {error} = await db.storage.from('software')
+      .upload(path, file, {contentType: file.type || 'application/octet-stream'});
+    if(error) throw error;
+    return {path, size: file.size};
+  }
+};
 
 const Notify = {
 

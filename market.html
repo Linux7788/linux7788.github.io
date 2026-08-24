@@ -1879,10 +1879,17 @@ function renderPay(){
       CART = [];
       syncCart();
 
-      awaitPayment(
-        order.ref,
-        payment.display_text || 'Approve the payment request on your phone.'
-      );
+      if(payment.status === 'send_otp'){
+        askForOtp(
+          order.ref,
+          payment.display_text || 'Enter the code we texted you.'
+        );
+      }else{
+        awaitPayment(
+          order.ref,
+          payment.display_text || 'Approve the payment request on your phone.'
+        );
+      }
 
     }catch(err){
 
@@ -1892,6 +1899,71 @@ function renderPay(){
     }
 
   };
+}
+
+/* ---------- enter the texted code ---------- */
+
+function askForOtp(ref, text){
+
+  $('#dTitle').textContent = 'Enter Payment Code';
+
+  $('#dBody').innerHTML = `
+    <p class="hint" style="margin-bottom:14px">
+      ${esc(text)}
+    </p>
+
+    <div class="field">
+      <label>Code from the text message</label>
+      <input id="otpCode" inputmode="numeric" autocomplete="one-time-code"
+             maxlength="8" placeholder="6 digits">
+    </div>
+
+    <p class="hint">
+      Order <b>${esc(ref)}</b>. The code comes by SMS from PAYSTACK.
+      Never share it with anyone else.
+    </p>
+  `;
+
+  $('#dFoot').innerHTML = `
+    <button class="btn" id="otpGo">Confirm Payment</button>
+    <button class="btn ghost" id="otpLater" style="width:100%;margin-top:8px">
+      Close — Check Orders
+    </button>
+  `;
+
+  $('#otpLater').onclick = () => { closeDrawer(); goto('orders'); };
+
+  $('#otpGo').onclick = async e => {
+
+    const label = e.target.textContent;
+    const code  = $('#otpCode').value.trim();
+
+    if(code.replace(/\D/g,'').length < 4){
+      return toast('Enter the code from the text message',true);
+    }
+
+    try{
+
+      busy(e.target,true,label);
+
+      const res = await Payments.submitOtp({reference:ref, otp:code});
+
+      if(res.status === 'success'){
+        awaitPayment(ref,'Payment accepted. Confirming with your bank...');
+      }else if(res.status === 'send_otp'){
+        toast('That code was not accepted. Check the message and try again.',true);
+        busy(e.target,false,label);
+      }else{
+        awaitPayment(ref, res.display_text || 'Finishing your payment...');
+      }
+
+    }catch(err){
+      toast(err.message,true);
+      busy(e.target,false,label);
+    }
+  };
+
+  openDrawer();
 }
 
 /* ---------- payment waiting ---------- */
