@@ -28,6 +28,40 @@
   --body:'Archivo',sans-serif;
 }
 
+/* ---------- themes ---------- */
+
+html[data-theme="blue"]{
+  --ink:#06090e; --panel:#0f151c; --panel2:#151d26; --line:#233040;
+  --green:#3da5ff; --green2:#1c5f9e;
+}
+html[data-theme="gold"]{
+  --ink:#0b0904; --panel:#161209; --panel2:#1d1810; --line:#332a17;
+  --green:#f0b429; --green2:#8a6410;
+}
+html[data-theme="red"]{
+  --ink:#0c0707; --panel:#17100f; --panel2:#1f1615; --line:#3a2422;
+  --green:#ff5a4d; --green2:#9e2c22;
+}
+html[data-theme="light"]{
+  --ink:#f6f7f5; --panel:#ffffff; --panel2:#f0f2ef; --line:#dde1dc;
+  --green:#12a150; --green2:#0b7a3b;
+  --amber:#b26a00; --red:#c0392b;
+  --text:#141a16; --dim:#5d6a61;
+}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(circle at 80% 0%,rgba(18,161,80,.07),transparent 30rem),
+    var(--ink);
+}
+html[data-theme="light"] .btn{ color:#ffffff; }
+
+.themepick{display:flex;gap:7px;align-items:center}
+.themepick button{
+  width:20px;height:20px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;padding:0;transition:.15s}
+.themepick button:hover{transform:scale(1.15)}
+.themepick button[aria-pressed="true"]{border-color:var(--text)}
+
 *{box-sizing:border-box;margin:0;padding:0}
 
 html{scroll-behavior:smooth}
@@ -1195,6 +1229,17 @@ footer .footin{
   </div>
 </section>
 
+<div class="wrap" style="display:flex;justify-content:center;padding:20px 18px 0">
+  <div class="themepick" role="group" aria-label="Colour theme">
+    <span class="hint" style="margin-right:4px">Theme</span>
+    <button data-theme-set="dark"  title="Green"  style="background:#39e66b"></button>
+    <button data-theme-set="blue"  title="Blue"   style="background:#3da5ff"></button>
+    <button data-theme-set="gold"  title="Gold"   style="background:#f0b429"></button>
+    <button data-theme-set="red"   title="Red"    style="background:#ff5a4d"></button>
+    <button data-theme-set="light" title="Light"  style="background:#ffffff;border:2px solid #999"></button>
+  </div>
+</div>
+
 <footer>
   <div class="wrap footin">
     <div class="logo" style="font-size:18px"><i></i>i<span>LiNuX</span></div>
@@ -1981,6 +2026,23 @@ function renderPay(){
     }
 
   };
+}
+
+/* ---------- colour theme ---------- */
+
+function applyTheme(name){
+  document.documentElement.setAttribute('data-theme', name);
+  try{ localStorage.setItem('ilinux-theme', name); }catch(_){}
+  document.querySelectorAll('[data-theme-set]').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.themeSet === name ? 'true' : 'false'));
+}
+
+function initTheme(){
+  let saved = 'dark';
+  try{ saved = localStorage.getItem('ilinux-theme') || 'dark'; }catch(_){}
+  applyTheme(saved);
+  document.querySelectorAll('[data-theme-set]').forEach(b =>
+    b.onclick = () => applyTheme(b.dataset.themeSet));
 }
 
 /* ---------- wallet ---------- */
@@ -3402,6 +3464,7 @@ Auth.onRecovery(() => {
   if(!document.getElementById('nGo')) showNewPassword();
 });
 
+initTheme();
 boot();
 </script>
 
