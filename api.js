@@ -1392,6 +1392,45 @@ const Software = {
   }
 };
 
+const Wallet = {
+
+  async mine(){
+    const {data, error} = await db.from('wallets').select('*').maybeSingle();
+    if(error) throw error;
+    return data || {balance_pesewas: 0};
+  },
+
+  async history(){
+    const {data, error} = await db.from('wallet_transactions')
+      .select('*').order('created_at',{ascending:false}).limit(50);
+    if(error) throw error;
+    return data || [];
+  },
+
+  // start a top-up; pay for it the same way as any other order
+  async startTopup({amountGHS, network, phone}){
+    const {data, error} = await db.rpc('create_topup',{
+      p_amount_pesewas: Math.round(Number(amountGHS) * 100),
+      p_momo_network  : network,
+      p_momo_phone    : phone
+    });
+    if(error) throw error;
+    return Array.isArray(data) ? data[0] : data;
+  },
+
+  async payOrder(orderRef){
+    const {data, error} = await db.rpc('pay_order_from_wallet',{p_order_ref: orderRef});
+    if(error) throw error;
+    return Array.isArray(data) ? data[0] : data;
+  },
+
+  async paySoftware(orderRef){
+    const {data, error} = await db.rpc('pay_software_from_wallet',{p_order_ref: orderRef});
+    if(error) throw error;
+    return Array.isArray(data) ? data[0] : data;
+  }
+};
+
 const Notify = {
 
   async adminNewSeller(seller){

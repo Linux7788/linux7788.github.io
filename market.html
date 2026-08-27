@@ -844,6 +844,7 @@ footer .footin{
       <button data-go="sell">Sell</button>
       <button data-go="check">IMEI Check</button>
       <button data-go="software">Software</button>
+      <button data-go="wallet" id="navWallet" hidden>Wallet</button>
       <button data-go="shop-mine" id="navShop" hidden>My Shop</button>
       <button data-go="orders" id="navOrders" hidden>Orders</button>
       <button data-go="admin" id="navAdmin" hidden>Admin</button>
@@ -923,6 +924,27 @@ footer .footin{
       Ownership proof and donor IMEI must be supplied before approval.
     </div>
 
+  </div>
+</section>
+
+<section class="view" id="v-wallet">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>My Wallet</h2>
+      <p>Top up once, then buy instantly without a code every time</p>
+    </div>
+
+    <div class="card" style="text-align:center;padding:28px">
+      <p class="hint">Available balance</p>
+      <div id="walBalance" style="font-size:38px;font-weight:700;margin:8px 0">--</div>
+      <button class="btn" id="walAdd">Add Funds</button>
+    </div>
+
+    <div class="section-head" style="margin-top:30px">
+      <h2>History</h2>
+      <p>Every movement in and out</p>
+    </div>
+    <div id="walHistory"></div>
   </div>
 </section>
 
@@ -1272,6 +1294,7 @@ document.querySelectorAll('[data-go]').forEach(btn => {
     if(btn.dataset.go === 'admin') loadAdmin();
     if(btn.dataset.go === 'check') loadDeviceCheck();
     if(btn.dataset.go === 'software') loadSoftware();
+    if(btn.dataset.go === 'wallet') loadWallet();
   };
 });
 
@@ -1915,6 +1938,20 @@ function renderPay(){
         momoNetwork:NET
       });
 
+      // If the wallet covers it, spend from there and skip the SMS code.
+      try{
+        const w = await Wallet.mine();
+        if((w.balance_pesewas || 0) >= order.total_pesewas){
+          await Wallet.payOrder(order.ref);
+          CART = [];
+          syncCart();
+          closeDrawer();
+          toast('Paid from your wallet');
+          goto('orders');
+          return;
+        }
+      }catch(_){ /* fall through to mobile money */ }
+
       const payment = await Payments.start({
         orderRef:order.ref,
         phone,
@@ -1944,6 +1981,101 @@ function renderPay(){
     }
 
   };
+}
+
+/* ---------- wallet ---------- */
+
+async function loadWallet(){
+  if(!ME){
+    $('#walBalance').textContent = '--';
+    $('#walHistory').innerHTML =
+      '<div class="empty"><b>Sign in</b>Your wallet appears here once you have an account.</div>';
+    return;
+  }
+
+  try{
+    const w = await Wallet.mine();
+    $('#walBalance').textContent = fmt(w.balance_pesewas || 0);
+
+    const rows = await Wallet.history();
+    $('#walHistory').innerHTML = rows.length ? rows.map(t => `
+      <div class="card" style="margin-bottom:10px">
+        <div class="spec-row">
+          <b>${esc(t.reason)}</b>
+          <span style="color:${t.direction === 'credit' ? 'var(--green)' : 'var(--dim)'}">
+            ${t.direction === 'credit' ? '+' : '-'}${fmt(t.amount_pesewas)}
+          </span>
+        </div>
+        <div class="spec-row">
+          <b>${new Date(t.created_at).toLocaleDateString('en-GB')}</b>
+          <span class="hint">balance ${fmt(t.balance_after)}</span>
+        </div>
+      </div>`).join('')
+      : '<div class="empty"><b>Nothing yet</b>Top up and your history appears here.</div>';
+
+  }catch(err){
+    $('#walHistory').innerHTML = `<div class="notice err">${esc(err.message)}</div>`;
+  }
+
+  const add = $('#walAdd');
+  if(add && !add.dataset.wired){
+    add.dataset.wired = '1';
+    add.onclick = showAddFunds;
+  }
+}
+
+function showAddFunds(){
+  if(!ME){ toast('Sign in first',true); return showAuth(); }
+
+  $('#dTitle').textContent = 'Add Funds';
+  $('#dBody').innerHTML = `
+    <div class="field"><label>Amount in cedis</label>
+      <input id="tuAmt" inputmode="decimal" placeholder="50"></div>
+    <div class="field"><label>Network</label>
+      <div class="netpick">
+        <button data-net="MTN" aria-pressed="false">MTN</button>
+        <button data-net="ATMoney" aria-pressed="false">ATMoney</button>
+        <button data-net="Telecel" aria-pressed="false">Telecel</button>
+      </div></div>
+    <div class="field"><label>Mobile money number</label>
+      <input id="tuPhone" inputmode="tel" placeholder="024 000 0000"></div>
+    <p class="hint">
+      Money added here stays in your account until you spend it.
+      Minimum GHS 1.
+    </p>`;
+
+  $('#dFoot').innerHTML = '<button class="btn" id="tuGo">Add Funds</button>';
+
+  let NET = null;
+  document.querySelectorAll('.netpick button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.netpick button').forEach(x =>
+      x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    NET = b.dataset.net;
+  });
+
+  $('#tuGo').onclick = async e => {
+    const label = e.target.textContent;
+    const amt = parseFloat($('#tuAmt').value);
+    const phone = $('#tuPhone').value.trim();
+
+    if(!amt || amt < 1) return toast('Enter at least GHS 1',true);
+    if(!NET) return toast('Choose a network',true);
+    if(phone.replace(/\D/g,'').length < 9) return toast('Enter a valid number',true);
+
+    try{
+      busy(e.target,true,label);
+      const top = await Wallet.startTopup({amountGHS:amt, network:NET, phone});
+      const pay = await Payments.start({orderRef:top.ref, phone, network:NET});
+
+      if(pay.status === 'send_otp'){
+        askForOtp(top.ref, pay.display_text || 'Enter the code we texted you.');
+      }else{
+        awaitPayment(top.ref, pay.display_text || 'Approve the request on your phone.');
+      }
+    }catch(err){ toast(err.message,true); busy(e.target,false,label); }
+  };
+
+  openDrawer();
 }
 
 /* ---------- device check ---------- */
@@ -2106,6 +2238,17 @@ function buySoftware(id, sw){
     try{
       busy(e.target,true,label);
       const order = await Software.buy({softwareId:id, buyerName:name, buyerPhone:phone, momoNetwork:NET});
+      try{
+        const w = await Wallet.mine();
+        if((w.balance_pesewas || 0) >= (sw?.price_pesewas || 0)){
+          await Wallet.paySoftware(order.ref);
+          closeDrawer();
+          toast('Paid from your wallet. Licence issued.');
+          goto('software');
+          return;
+        }
+      }catch(_){ /* fall through to mobile money */ }
+
       const pay = await Payments.start({orderRef:order.ref, phone, network:NET});
       if(pay.status === 'send_otp'){
         askForOtp(order.ref, pay.display_text || 'Enter the code we texted you.');
@@ -3051,6 +3194,7 @@ async function boot(){
     ME ? 'Sign Out' : 'Sign In';
 
   $('#navOrders').hidden = !ME;
+  if($('#navWallet')) $('#navWallet').hidden = !ME;
 
   $('#navAdmin').hidden =
     !(ME?.profile?.is_admin);
