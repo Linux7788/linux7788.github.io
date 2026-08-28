@@ -1345,11 +1345,55 @@ footer .footin{
       <button data-tab="payouts" aria-pressed="false">
         Payouts <span id="tPayouts"></span>
       </button>
+
+      <button data-tab="software" aria-pressed="false">
+        Software <span id="tSoftware"></span>
+      </button>
     </div>
 
     <div class="card" id="qSellers"></div>
     <div class="card" id="qListings" style="display:none"></div>
     <div class="card" id="qPayouts" style="display:none"></div>
+
+    <div id="qSoftware" style="display:none">
+      <div class="card">
+        <div class="section-head" style="margin:0 0 14px">
+          <h2 style="font-size:19px">Publish Software</h2>
+          <p>Upload the file, set a price, put it live</p>
+        </div>
+
+        <div class="field"><label>Name</label>
+          <input id="swfName" placeholder="e.g. Bench Diagnostic Suite"></div>
+
+        <div class="field"><label>Short line buyers see</label>
+          <input id="swfSummary" placeholder="What it does, in one sentence"></div>
+
+        <div class="field"><label>Version</label>
+          <input id="swfVersion" placeholder="1.0"></div>
+
+        <div class="field"><label>Price in cedis</label>
+          <input id="swfPrice" inputmode="decimal" placeholder="150"></div>
+
+        <div class="field"><label>Devices allowed per licence</label>
+          <input id="swfActs" inputmode="numeric" value="1"></div>
+
+        <div class="field"><label>The file itself</label>
+          <input type="file" id="swfFile">
+          <p class="hint">Stored privately. Only someone with a licence can download it.</p>
+        </div>
+
+        <div class="field"><label>Status</label>
+          <select id="swfStatus">
+            <option value="draft">Draft — hidden</option>
+            <option value="live">Live — on sale</option>
+          </select>
+        </div>
+
+        <button class="btn" id="swfSave">Save Software</button>
+      </div>
+
+      <div id="swfList" style="margin-top:14px"></div>
+    </div>
 
   </div>
 </section>
@@ -2151,6 +2195,95 @@ function renderPay(){
     }
 
   };
+}
+
+/* ---------- admin: publish software ---------- */
+
+async function loadAdminSoftware(){
+  try{
+    const rows = await Software.adminList();
+    if($('#tSoftware')) $('#tSoftware').textContent = rows.length ? '(' + rows.length + ')' : '';
+
+    $('#swfList').innerHTML = rows.length ? rows.map(s => `
+      <div class="card" style="margin-bottom:10px">
+        <div class="spec-row">
+          <b>${esc(s.name)} ${s.version ? 'v'+esc(s.version) : ''}</b>
+          <span>${fmt(s.price_pesewas)}</span>
+        </div>
+        <div class="spec-row">
+          <b>Status</b>
+          <span style="color:${s.status==='live'?'var(--green)':'var(--dim)'}">${esc(s.status)}</span>
+        </div>
+        <div class="spec-row">
+          <b>File</b>
+          <span>${s.file_path ? 'uploaded' : 'none yet'}</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn ghost" data-sw-toggle="${s.id}" data-status="${s.status}"
+            style="flex:1">${s.status==='live' ? 'Take offline' : 'Put live'}</button>
+        </div>
+      </div>`).join('')
+      : '<div class="empty"><b>Nothing published</b>Fill the form above to add your first tool.</div>';
+
+    document.querySelectorAll('[data-sw-toggle]').forEach(b => b.onclick = async e => {
+      const label = e.target.textContent;
+      const next = b.dataset.status === 'live' ? 'hidden' : 'live';
+      try{
+        busy(e.target,true,label);
+        await Software.adminSave({id:b.dataset.swToggle, status:next});
+        toast(next === 'live' ? 'Now on sale' : 'Taken offline');
+        loadAdminSoftware();
+      }catch(err){ toast(err.message,true); busy(e.target,false,label); }
+    });
+
+  }catch(err){
+    $('#swfList').innerHTML = `<div class="notice err">${esc(err.message)}</div>`;
+  }
+
+  const save = $('#swfSave');
+  if(save && !save.dataset.wired){
+    save.dataset.wired = '1';
+    save.onclick = saveSoftware;
+  }
+}
+
+async function saveSoftware(e){
+  const label = e.target.textContent;
+  const name  = $('#swfName').value.trim();
+  const price = parseFloat($('#swfPrice').value);
+  const file  = $('#swfFile').files[0];
+
+  if(!name)  return toast('Give it a name',true);
+  if(isNaN(price) || price < 0) return toast('Enter a price',true);
+
+  try{
+    busy(e.target,true,label);
+
+    let filePath = null, fileSize = null;
+    if(file){
+      const up = await Software.adminUpload(file);
+      filePath = up.path; fileSize = up.size;
+    }
+
+    await Software.adminSave({
+      name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
+            + '-' + Math.random().toString(36).slice(2,6),
+      summary: $('#swfSummary').value.trim(),
+      version: $('#swfVersion').value.trim(),
+      priceGHS: price,
+      maxActivations: parseInt($('#swfActs').value) || 1,
+      status: $('#swfStatus').value,
+      filePath, fileSize
+    });
+
+    ['swfName','swfSummary','swfVersion','swfPrice'].forEach(id => $('#'+id).value = '');
+    $('#swfFile').value = '';
+    toast('Saved');
+    loadAdminSoftware();
+
+  }catch(err){ toast(err.message,true); }
+  finally{ busy(e.target,false,label); }
 }
 
 /* ---------- homepage: live numbers and shortcuts ---------- */
@@ -3063,6 +3196,11 @@ document.querySelectorAll('[data-tab]').forEach(btn => {
 
     $('#qPayouts').style.display =
       btn.dataset.tab === 'payouts' ? '' : 'none';
+
+    $('#qSoftware').style.display =
+      btn.dataset.tab === 'software' ? '' : 'none';
+
+    if(btn.dataset.tab === 'software') loadAdminSoftware();
 
   };
 
