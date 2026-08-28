@@ -92,6 +92,44 @@ html[data-theme="light"] .hint{
   color:#5d6a61;
 }
 
+.strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(255,255,255,.014),transparent)}
+.strip-in{max-width:1180px;margin:0 auto;padding:0 18px;
+  display:grid;grid-template-columns:repeat(4,1fr)}
+.stat{padding:20px 18px 20px 0;border-right:1px solid var(--line)}
+.stat:last-child{border-right:none}
+.stat b{display:block;font-family:var(--disp);font-size:30px;
+  font-weight:800;letter-spacing:-.02em;line-height:1}
+.stat span{display:block;margin-top:5px;font-family:var(--mono);
+  font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.docks{display:grid;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(238px,1fr))}
+.dock{background:var(--panel);padding:24px 20px 22px;
+  display:flex;flex-direction:column;gap:9px;cursor:pointer;
+  transition:background .16s;text-align:left;border:none;color:inherit;font:inherit}
+.dock:hover{background:var(--panel2)}
+.dock i{font-style:normal;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.16em;color:var(--green);text-transform:uppercase}
+.dock b{font-family:var(--disp);font-size:21px;font-weight:800}
+.dock p{font-size:13.5px;color:var(--dim);line-height:1.45}
+.dock u{margin-top:auto;text-decoration:none;font-family:var(--mono);
+  font-size:11px;color:var(--text);padding-top:10px}
+.steps{counter-reset:s;display:grid;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.step{background:var(--panel);padding:22px 20px}
+.step:before{counter-increment:s;content:counter(s,decimal-leading-zero);
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  color:var(--green);display:block;margin-bottom:9px}
+.step b{display:block;font-family:var(--disp);font-size:17px;
+  font-weight:700;margin-bottom:5px}
+.step p{font-size:13px;color:var(--dim);line-height:1.45}
+@media(max-width:760px){
+  .strip-in{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:none}
+  .stat{border-bottom:1px solid var(--line)}
+}
 .themepick{display:flex;gap:7px;align-items:center}
 .themepick button{
   width:20px;height:20px;border-radius:50%;border:2px solid transparent;
@@ -950,6 +988,56 @@ footer .footin{
         <span><b>✓</b> Locked stock requires proof</span>
       </div>
 
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="strip-in">
+      <div class="stat"><b id="stParts">--</b><span>Parts on the bench</span></div>
+      <div class="stat"><b id="stSellers">--</b><span>Sellers vetted</span></div>
+      <div class="stat"><b id="stChecks">--</b><span>Devices checked</span></div>
+      <div class="stat"><b>15%</b><span>Commission, flat</span></div>
+    </div>
+  </div>
+
+  <div class="wrap" style="padding-top:38px">
+    <div class="docks">
+      <button class="dock" data-jump="shop">
+        <i>Bench stock</i><b>Parts</b>
+        <p>Screens, batteries, boards. Graded A or B, every seller checked by hand before their first listing.</p>
+        <u>Browse the ledger &rarr;</u>
+      </button>
+      <button class="dock" data-jump="check">
+        <i>Before you buy</i><b>Device Check</b>
+        <p>Paste an IMEI or serial. Model, capacity, warranty, carrier lock and Find My status.</p>
+        <u>Run a check &rarr;</u>
+      </button>
+      <button class="dock" data-jump="software">
+        <i>Workshop tools</i><b>Software</b>
+        <p>Utilities and licences for the bench. Each key registers to one machine.</p>
+        <u>See what is available &rarr;</u>
+      </button>
+      <button class="dock" data-jump="sell">
+        <i>Your stock, our floor</i><b>Sell With Us</b>
+        <p>List what is sitting in your drawer. We hold the buyer's money until they confirm it arrived.</p>
+        <u>Apply as a seller &rarr;</u>
+      </button>
+    </div>
+
+    <div class="section-head" style="margin-top:40px">
+      <h2>How A Sale Works</h2>
+      <p>Money is held between the two of you until the part is in hand</p>
+    </div>
+
+    <div class="steps">
+      <div class="step"><b>Buyer pays</b>
+        <p>Mobile money, or from a topped-up wallet. Funds sit with iLiNuX, not the seller.</p></div>
+      <div class="step"><b>Seller ships</b>
+        <p>They are told the moment payment lands, with the delivery area and phone number.</p></div>
+      <div class="step"><b>Buyer confirms</b>
+        <p>Part arrived as described. Only the buyer can release the money.</p></div>
+      <div class="step"><b>Seller is paid</b>
+        <p>Their share appears in payouts due, less the flat 15%.</p></div>
     </div>
   </div>
 
@@ -2063,6 +2151,32 @@ function renderPay(){
     }
 
   };
+}
+
+/* ---------- homepage: live numbers and shortcuts ---------- */
+
+async function loadStats(){
+  // real counts from the database, not decoration
+  try{
+    const {count} = await db.from('listings')
+      .select('*',{count:'exact',head:true}).eq('status','live').gt('stock',0);
+    if($('#stParts')) $('#stParts').textContent = count ?? 0;
+  }catch(_){}
+  try{
+    const {count} = await db.from('sellers')
+      .select('*',{count:'exact',head:true}).eq('status','approved');
+    if($('#stSellers')) $('#stSellers').textContent = count ?? 0;
+  }catch(_){}
+  try{
+    const {count} = await db.from('device_checks')
+      .select('*',{count:'exact',head:true}).eq('ok',true);
+    if($('#stChecks')) $('#stChecks').textContent = count ?? 0;
+  }catch(_){}
+}
+
+function wireDocks(){
+  document.querySelectorAll('[data-jump]').forEach(b =>
+    b.onclick = () => goto(b.dataset.jump));
 }
 
 /* ---------- colour theme ---------- */
@@ -3502,6 +3616,8 @@ Auth.onRecovery(() => {
 });
 
 initTheme();
+wireDocks();
+loadStats();
 boot();
 </script>
 
