@@ -339,8 +339,15 @@ const Listings = {
 
     }
 
+    // Deleted parts leave the store the moment they are binned.
     const {data,error} =
-      await query;
+      await query.is('deleted_at',null);
+
+    if(error && /deleted_at/.test(String(error.message))){
+      const r = await query;          // column not added yet
+      if(r.error) throw r.error;
+      return r.data || [];
+    }
 
     if(error) throw error;
 
@@ -1067,6 +1074,28 @@ const explainDeleteError = (error, what) => {
   return error instanceof Error ? error : new Error(error?.message || 'Delete failed.');
 };
 
+// How long a deleted row stays recoverable.
+const RECYCLE_BIN_DAYS = 30;
+
+const refusedError = () => new Error(
+  'The database refused that change. Run admin-delete.sql and soft-delete.sql ' +
+  'in the Supabase SQL editor, and confirm your profile has is_admin = true.'
+);
+
+// The recycle bin needs a deleted_at column. Say so plainly rather than
+// letting "column does not exist" reach the user.
+const softDeleteError = (error, what) => {
+
+  if(/deleted_at/.test(String(error?.message || ''))){
+    return new Error(
+      'The recycle bin is not set up yet: the ' + what + ' table has no ' +
+      'deleted_at column. Run soft-delete.sql in the Supabase SQL editor once.'
+    );
+  }
+
+  return error instanceof Error ? error : new Error(error?.message || 'Delete failed.');
+};
+
 const Admin = {
 
   async pendingSellers(){
@@ -1107,6 +1136,7 @@ const Admin = {
   // Everything the admin panel used to be blind to. decideListing() only ever
   // touched rows with status 'pending', so once something went live there was
   // no way back to it from the dashboard at all.
+  // status 'deleted' shows the recycle bin; every other filter hides it.
   async allListings(status){
 
     let q = db
@@ -1117,11 +1147,26 @@ const Admin = {
       `)
       .order('created_at',{ascending:false});
 
-    if(status && status !== 'all'){
-      q = q.eq('status',status);
+    if(status === 'deleted'){
+      q = q.not('deleted_at','is',null);
+    }else{
+      q = q.is('deleted_at',null);
+      if(status && status !== 'all') q = q.eq('status',status);
     }
 
     const {data,error} = await q;
+
+    // Before soft-delete.sql has been run there is no deleted_at column.
+    // Fall back rather than leaving the admin panel blank.
+    if(error && /deleted_at/.test(String(error.message))){
+      if(status === 'deleted') return [];
+      let f = db.from('listings').select('*, sellers(shop_name)')
+        .order('created_at',{ascending:false});
+      if(status && status !== 'all') f = f.eq('status',status);
+      const r = await f;
+      if(r.error) throw r.error;
+      return r.data || [];
+    }
 
     if(error) throw error;
 
@@ -1169,9 +1214,39 @@ const Admin = {
     return count ? [count + ' order line(s)'] : [];
   },
 
-  // Permanent, and never refused. If the database blocks it, the real reason
-  // is reported instead of a vague failure.
+  // Recoverable. The row leaves the site at once but stays in the Deleted tab
+  // for RECYCLE_BIN_DAYS, so one mis-tap does not destroy a seller's stock.
   async deleteListing(id){
+
+    if(!id) throw new Error('Listing id is required.');
+
+    const {data,error} =
+      await db
+        .from('listings')
+        .update({deleted_at:new Date().toISOString()})
+        .eq('id',id)
+        .select('id');
+
+    if(error) throw softDeleteError(error,'listing');
+
+    if(!data || data.length === 0) throw refusedError();
+  },
+
+  async restoreListing(id){
+
+    const {data,error} =
+      await db
+        .from('listings')
+        .update({deleted_at:null})
+        .eq('id',id)
+        .select('id');
+
+    if(error) throw error;
+    if(!data || data.length === 0) throw refusedError();
+  },
+
+  // Gone for good, now, with its photos. This is the one that cannot be undone.
+  async purgeListing(id){
 
     if(!id) throw new Error('Listing id is required.');
 
@@ -1211,9 +1286,25 @@ const Admin = {
   async allSellers(status){
 
     let q = db.from('sellers').select('*').order('created_at',{ascending:false});
-    if(status && status !== 'all') q = q.eq('status',status);
+
+    if(status === 'deleted'){
+      q = q.not('deleted_at','is',null);
+    }else{
+      q = q.is('deleted_at',null);
+      if(status && status !== 'all') q = q.eq('status',status);
+    }
 
     const {data,error} = await q;
+
+    if(error && /deleted_at/.test(String(error.message))){
+      if(status === 'deleted') return [];
+      let f = db.from('sellers').select('*').order('created_at',{ascending:false});
+      if(status && status !== 'all') f = f.eq('status',status);
+      const r = await f;
+      if(r.error) throw r.error;
+      return r.data || [];
+    }
+
     if(error) throw error;
     return data || [];
   },
@@ -1228,8 +1319,44 @@ const Admin = {
     return count ? [count + ' listing(s)'] : [];
   },
 
-  // Removes the seller and, through the cascade, everything they put up.
+  // Recoverable. Bins the seller and everything they listed, together, so
+  // Restore brings the whole shop back rather than an empty seller record.
   async deleteSeller(id){
+
+    if(!id) throw new Error('Seller id is required.');
+
+    const stamp = new Date().toISOString();
+
+    const {data,error} =
+      await db.from('sellers')
+        .update({deleted_at:stamp}).eq('id',id).select('id');
+
+    if(error) throw softDeleteError(error,'seller');
+    if(!data || data.length === 0) throw refusedError();
+
+    // Their listings go with them. A failure here must not leave the seller
+    // half-deleted, so it is reported rather than swallowed.
+    const {error:listErr} = await db.from('listings')
+      .update({deleted_at:stamp}).eq('seller_id',id).is('deleted_at',null);
+
+    if(listErr) throw softDeleteError(listErr,'listing');
+  },
+
+  async restoreSeller(id){
+
+    const {data,error} =
+      await db.from('sellers')
+        .update({deleted_at:null}).eq('id',id).select('id');
+
+    if(error) throw error;
+    if(!data || data.length === 0) throw refusedError();
+
+    await db.from('listings')
+      .update({deleted_at:null}).eq('seller_id',id).not('deleted_at','is',null);
+  },
+
+  // Gone for good. Cascades to their listings and those listings' order lines.
+  async purgeSeller(id){
 
     if(!id) throw new Error('Seller id is required.');
 
@@ -1244,6 +1371,18 @@ const Admin = {
         'Supabase SQL editor, and confirm your profile has is_admin = true.'
       );
     }
+  },
+
+  // Removes anything binned more than RECYCLE_BIN_DAYS ago. Called when the
+  // Deleted tab opens, so the bin empties itself without a scheduler.
+  async purgeExpired(){
+
+    const {data,error} = await db.rpc('purge_deleted',{
+      older_than_days: RECYCLE_BIN_DAYS
+    });
+
+    if(error) return [];          // not installed yet — never block the panel
+    return data || [];
   },
 
   async deleteOrder(ref){
@@ -1489,7 +1628,16 @@ const Software = {
       .from('software')
       .select('*')
       .eq('status','live')
+      .is('deleted_at',null)
       .order('created_at',{ascending:false});
+
+    // Tolerate the column not existing yet — buyers must never see an error.
+    if(error && /deleted_at/.test(String(error.message))){
+      const r = await db.from('software').select('*')
+        .eq('status','live').order('created_at',{ascending:false});
+      return r.error ? [] : (r.data || []);
+    }
+
     if(error) throw error;
     return data || [];
   },
@@ -1544,9 +1692,22 @@ const Software = {
   },
 
   // --- admin ---
-  async adminList(){
-    const {data, error} = await db
-      .from('software').select('*').order('created_at',{ascending:false});
+  async adminList(view){
+    let q = db.from('software').select('*').order('created_at',{ascending:false});
+
+    if(view === 'deleted') q = q.not('deleted_at','is',null);
+    else                   q = q.is('deleted_at',null);
+
+    const {data, error} = await q;
+
+    if(error && /deleted_at/.test(String(error.message))){
+      if(view === 'deleted') return [];
+      const r = await db.from('software').select('*')
+        .order('created_at',{ascending:false});
+      if(r.error) throw r.error;
+      return r.data || [];
+    }
+
     if(error) throw error;
     return data || [];
   },
@@ -1630,9 +1791,32 @@ const Software = {
     return out;
   },
 
-  // Permanent removal of a published tool, plus its uploaded file.
-  // Never refused — if Postgres blocks it, the real reason is reported.
+  // Recoverable — goes to the Deleted tab, not the void.
   async adminDelete(id){
+
+    if(!id) throw new Error('Software id is required.');
+
+    const {data,error} = await db
+      .from('software')
+      .update({deleted_at:new Date().toISOString()})
+      .eq('id',id)
+      .select('id');
+
+    if(error) throw softDeleteError(error,'software');
+    if(!data || data.length === 0) throw refusedError();
+  },
+
+  async adminRestore(id){
+
+    const {data,error} = await db
+      .from('software').update({deleted_at:null}).eq('id',id).select('id');
+
+    if(error) throw error;
+    if(!data || data.length === 0) throw refusedError();
+  },
+
+  // Gone for good, with the uploaded file.
+  async adminPurge(id){
 
     if(!id) throw new Error('Software id is required.');
 

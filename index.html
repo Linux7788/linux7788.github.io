@@ -1362,6 +1362,7 @@ footer .footin{
           <button data-sf="approved" aria-pressed="false">Approved</button>
           <button data-sf="rejected" aria-pressed="false">Rejected</button>
           <button data-sf="all" aria-pressed="false">All</button>
+          <button data-sf="deleted" aria-pressed="false">🗑 Deleted</button>
         </div>
       </div>
       <div class="card" id="qSellers"></div>
@@ -1378,6 +1379,7 @@ footer .footin{
           <button data-lf="hidden" aria-pressed="false">Taken down</button>
           <button data-lf="rejected" aria-pressed="false">Rejected</button>
           <button data-lf="all" aria-pressed="false">All</button>
+          <button data-lf="deleted" aria-pressed="false">🗑 Deleted</button>
         </div>
       </div>
       <div class="card" id="qListings"></div>
@@ -1423,6 +1425,11 @@ footer .footin{
           <button class="btn" id="swfSave" style="flex:1">Save Software</button>
           <button class="btn ghost" id="swfCancel" style="display:none">Cancel edit</button>
         </div>
+      </div>
+
+      <div class="netrow" id="swfView" style="margin-top:14px">
+        <button data-swv="active" aria-pressed="true">Published</button>
+        <button data-swv="deleted" aria-pressed="false">🗑 Deleted</button>
       </div>
 
       <div id="swfList" style="margin-top:14px"></div>
@@ -2241,9 +2248,12 @@ function renderPay(){
 
 /* ---------- admin: publish software ---------- */
 
+let SOFTWARE_VIEW = 'active';
+
 async function loadAdminSoftware(){
   try{
-    const rows = await Software.adminList();
+    if(SOFTWARE_VIEW === 'deleted') Admin.purgeExpired().catch(()=>{});
+    const rows = await Software.adminList(SOFTWARE_VIEW);
     if($('#tSoftware')) $('#tSoftware').textContent = rows.length ? '(' + rows.length + ')' : '';
 
     $('#swfList').innerHTML = rows.length ? rows.map(s => `
@@ -2261,14 +2271,23 @@ async function loadAdminSoftware(){
           <span>${s.file_path ? 'uploaded' : 'none yet'}</span>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="btn ghost" data-sw-edit="${s.id}" style="flex:1">Edit</button>
-          <button class="btn ghost" data-sw-toggle="${s.id}" data-status="${s.status}"
-            style="flex:1">${s.status==='live' ? 'Take offline' : 'Put live'}</button>
-          <button class="btn ghost" data-sw-del data-id="${s.id}"
-            style="flex:1;color:#ff6b6b;border-color:#ff6b6b">Delete</button>
+          ${s.deleted_at ? `
+            <span class="flag" style="flex:1">deleted ${binAge(s.deleted_at)}</span>
+            <button class="btn ghost" data-sw-restore="${s.id}" style="flex:1">Restore</button>
+            <button class="btn ghost" data-sw-purge data-id="${s.id}"
+              style="flex:1;color:#ff6b6b;border-color:#ff6b6b">Delete forever</button>
+          ` : `
+            <button class="btn ghost" data-sw-edit="${s.id}" style="flex:1">Edit</button>
+            <button class="btn ghost" data-sw-toggle="${s.id}" data-status="${s.status}"
+              style="flex:1">${s.status==='live' ? 'Take offline' : 'Put live'}</button>
+            <button class="btn ghost" data-sw-del data-id="${s.id}"
+              style="flex:1;color:#ff6b6b;border-color:#ff6b6b">Delete</button>
+          `}
         </div>
       </div>`).join('')
-      : '<div class="empty"><b>Nothing published</b>Fill the form above to add your first tool.</div>';
+      : (SOFTWARE_VIEW === 'deleted'
+          ? '<div class="empty"><b>Bin is empty</b>Nothing deleted in the last 30 days.</div>'
+          : '<div class="empty"><b>Nothing published</b>Fill the form above to add your first tool.</div>');
 
     document.querySelectorAll('[data-sw-toggle]').forEach(b => b.onclick = async e => {
       const label = e.target.textContent;
@@ -2283,13 +2302,32 @@ async function loadAdminSoftware(){
     });
 
     wireDeletes('[data-sw-del]', {
-      impact: id => Software.impact(id),
+      impact: async id => ['— recoverable for 30 days'],
       remove: async id => {
         await Software.adminDelete(id);
         if(SWF_EDIT_ID === id) clearSoftwareForm();
       },
       label:  'Delete',
       after:  loadAdminSoftware
+    });
+
+    wireDeletes('[data-sw-purge]', {
+      impact: async id => {
+        const parts = await Software.impact(id);
+        return parts.length ? parts.concat('cannot be undone') : ['— cannot be undone'];
+      },
+      remove: id => Software.adminPurge(id),
+      label:  'Delete forever',
+      after:  loadAdminSoftware
+    });
+
+    document.querySelectorAll('[data-sw-restore]').forEach(b => b.onclick = async e => {
+      try{
+        busy(e.target,true,'Restore');
+        await Software.adminRestore(b.dataset.swRestore);
+        toast('Restored');
+        loadAdminSoftware();
+      }catch(err){ toast(err.message,true); busy(e.target,false,'Restore'); }
     });
 
     // Editing an existing row instead of inserting a duplicate every time.
@@ -2332,6 +2370,18 @@ async function loadAdminSoftware(){
     tg.dataset.wired = '1';
     tg.onclick = testTelegram;
   }
+
+  document.querySelectorAll('#swfView [data-swv]').forEach(b => {
+    if(b.dataset.wired) return;
+    b.dataset.wired = '1';
+    b.onclick = () => {
+      SOFTWARE_VIEW = b.dataset.swv;
+      document.querySelectorAll('#swfView [data-swv]').forEach(x =>
+        x.setAttribute('aria-pressed', x === b ? 'true' : 'false')
+      );
+      loadAdminSoftware();
+    };
+  });
 }
 
 // Notification failures are swallowed everywhere else on purpose — a dead bot
@@ -3345,6 +3395,15 @@ document.querySelectorAll('[data-tab]').forEach(btn => {
 
 });
 
+/* How long ago it was binned, and how long is left before it is purged. */
+function binAge(stamp){
+  const days = Math.floor((Date.now() - new Date(stamp).getTime()) / 86400000);
+  const left = 30 - days;
+  if(left <= 0)  return 'today — purging now';
+  if(days === 0) return 'today · ' + left + 'd left';
+  return days + 'd ago · ' + left + 'd left';
+}
+
 /* ---------- one delete control, used by every admin list ----------
    First tap looks up what else would go and shows it on the button.
    Second tap deletes. 10 seconds to decide, because 4 was not enough
@@ -3406,20 +3465,31 @@ async function loadAdmin(){
 
   try{
 
-    const [allSellers,allListings,payouts] =
+    const binS = SELLER_FILTER  === 'deleted';
+    const binL = LISTING_FILTER === 'deleted';
+
+    // Opening the bin is also when it empties itself of anything older
+    // than 30 days, so no scheduler is needed.
+    if(binS || binL) Admin.purgeExpired().catch(()=>{});
+
+    const [allSellers,allListings,payouts,delSellers,delListings] =
       await Promise.all([
         Admin.allSellers('all'),
         Admin.allListings('all'),
-        Admin.payoutsDue()
+        Admin.payoutsDue(),
+        binS ? Admin.allSellers('deleted')  : Promise.resolve([]),
+        binL ? Admin.allListings('deleted') : Promise.resolve([])
       ]);
 
     const pendingSellerCount =
       allSellers.filter(s => s.status === 'pending').length;
 
     const sellers =
-      SELLER_FILTER === 'all'
-        ? allSellers
-        : allSellers.filter(s => s.status === SELLER_FILTER);
+      binS
+        ? delSellers
+        : SELLER_FILTER === 'all'
+          ? allSellers
+          : allSellers.filter(s => s.status === SELLER_FILTER);
 
     // The badge still counts only what needs a decision; the panel below can
     // now reach every listing, which is what was missing.
@@ -3427,9 +3497,11 @@ async function loadAdmin(){
       allListings.filter(l => l.status === 'pending').length;
 
     const listings =
-      LISTING_FILTER === 'all'
-        ? allListings
-        : allListings.filter(l => l.status === LISTING_FILTER);
+      binL
+        ? delListings
+        : LISTING_FILTER === 'all'
+          ? allListings
+          : allListings.filter(l => l.status === LISTING_FILTER);
 
     $('#tSellers').textContent =
       `(${pendingSellerCount})`;
@@ -3464,22 +3536,34 @@ async function loadAdmin(){
 
             <div class="qacts">
 
-              ${s.status === 'pending' ? `
+              ${s.deleted_at ? `
+                <span class="flag">deleted ${binAge(s.deleted_at)}</span>
                 <button class="btn sm"
-                  data-approve-seller="${esc(s.id)}">
-                  Approve
+                  data-seller-restore="${esc(s.id)}">
+                  Restore
                 </button>
+                <button class="btn danger sm"
+                  data-seller-purge data-id="${esc(s.id)}">
+                  Delete forever
+                </button>
+              ` : `
+                ${s.status === 'pending' ? `
+                  <button class="btn sm"
+                    data-approve-seller="${esc(s.id)}">
+                    Approve
+                  </button>
+
+                  <button class="btn danger sm"
+                    data-reject-seller="${esc(s.id)}">
+                    Reject
+                  </button>
+                ` : `<span class="flag">${esc(s.status)}</span>`}
 
                 <button class="btn danger sm"
-                  data-reject-seller="${esc(s.id)}">
-                  Reject
+                  data-seller-del data-id="${esc(s.id)}">
+                  Delete
                 </button>
-              ` : `<span class="flag">${esc(s.status)}</span>`}
-
-              <button class="btn danger sm"
-                data-seller-del data-id="${esc(s.id)}">
-                Delete
-              </button>
+              `}
 
             </div>
 
@@ -3489,10 +3573,29 @@ async function loadAdmin(){
         : `<div class="empty"><b>Nothing here</b>No sellers with that status.</div>`;
 
     wireDeletes('[data-seller-del]', {
-      impact: id => Admin.sellerImpact(id),
+      impact: async id => {
+        const parts = await Admin.sellerImpact(id);
+        return parts.map(p => p + ' (recoverable for 30 days)');
+      },
       remove: id => Admin.deleteSeller(id),
       label:  'Delete',
       after:  loadAdmin
+    });
+
+    wireDeletes('[data-seller-purge]', {
+      impact: async id => ['— this cannot be undone'],
+      remove: id => Admin.purgeSeller(id),
+      label:  'Delete forever',
+      after:  loadAdmin
+    });
+
+    document.querySelectorAll('[data-seller-restore]').forEach(b => b.onclick = async e => {
+      try{
+        busy(e.target,true,'Restore');
+        await Admin.restoreSeller(b.dataset.sellerRestore);
+        toast('Restored');
+        loadAdmin();
+      }catch(err){ toast(err.message,true); busy(e.target,false,'Restore'); }
     });
 
     $('#qListings').innerHTML =
@@ -3543,6 +3646,18 @@ async function loadAdmin(){
                   : ''
               }
 
+              ${l.deleted_at ? `
+                <span class="flag">deleted ${binAge(l.deleted_at)}</span>
+                <button class="btn sm"
+                  data-listing-restore="${esc(l.id)}">
+                  Restore
+                </button>
+                <button class="btn danger sm"
+                  data-listing-purge data-id="${esc(l.id)}">
+                  Delete forever
+                </button>
+              ` : `
+
               ${l.status === 'pending' ? `
                 <button class="btn sm"
                   data-approve-listing="${esc(l.id)}">
@@ -3573,6 +3688,7 @@ async function loadAdmin(){
                 data-listing-del data-id="${esc(l.id)}">
                 Delete
               </button>
+              `}
 
             </div>
 
@@ -3592,10 +3708,29 @@ async function loadAdmin(){
     });
 
     wireDeletes('[data-listing-del]', {
-      impact: id => Admin.listingImpact(id),
+      impact: async id => ['— recoverable for 30 days'],
       remove: id => Admin.deleteListing(id),
       label:  'Delete',
       after:  loadAdmin
+    });
+
+    wireDeletes('[data-listing-purge]', {
+      impact: async id => {
+        const parts = await Admin.listingImpact(id);
+        return parts.length ? parts.concat('cannot be undone') : ['— cannot be undone'];
+      },
+      remove: id => Admin.purgeListing(id),
+      label:  'Delete forever',
+      after:  loadAdmin
+    });
+
+    document.querySelectorAll('[data-listing-restore]').forEach(b => b.onclick = async e => {
+      try{
+        busy(e.target,true,'Restore');
+        await Admin.restoreListing(b.dataset.listingRestore);
+        toast('Restored');
+        loadAdmin();
+      }catch(err){ toast(err.message,true); busy(e.target,false,'Restore'); }
     });
 
     $('#qPayouts').innerHTML =
