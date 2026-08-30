@@ -1042,6 +1042,31 @@ const Payments = {
 // ADMIN
 // ============================================================
 
+// A delete that Postgres blocks comes back as code 23503 naming the table that
+// still points at the row. The old message just said "refused", which is why a
+// failing Delete button looked like a broken Delete button.
+const explainDeleteError = (error, what) => {
+
+  if(error && String(error.code) === '23503'){
+
+    const blocker =
+      (String(error.details || error.message || '')
+        .match(/table "([a-z_]+)"/g) || [])
+        .map(s => s.replace(/table "|"/g,''))
+        .filter(t => t !== what)
+        .pop() || 'another table';
+
+    return new Error(
+      'The database is still holding this ' + what + ': rows in "' + blocker +
+      '" point at it, so Postgres will not remove it. Run the cascade section ' +
+      'of admin-delete.sql in the Supabase SQL editor — that is the one-time ' +
+      'fix that makes Delete work for good.'
+    );
+  }
+
+  return error instanceof Error ? error : new Error(error?.message || 'Delete failed.');
+};
+
 const Admin = {
 
   async pendingSellers(){
@@ -1132,26 +1157,23 @@ const Admin = {
     }
   },
 
-  // Permanent. Refused when the listing is attached to an order, because
-  // deleting it would tear a hole in an order the buyer already paid for.
+  // What else disappears if this listing goes. Shown before you confirm,
+  // rather than used as a reason to refuse — it is your site.
+  async listingImpact(id){
+
+    const {count} = await db
+      .from('order_items')
+      .select('id',{count:'exact',head:true})
+      .eq('listing_id',id);
+
+    return count ? [count + ' order line(s)'] : [];
+  },
+
+  // Permanent, and never refused. If the database blocks it, the real reason
+  // is reported instead of a vague failure.
   async deleteListing(id){
 
     if(!id) throw new Error('Listing id is required.');
-
-    const {count,error:countError} =
-      await db
-        .from('order_items')
-        .select('id',{count:'exact',head:true})
-        .eq('listing_id',id);
-
-    if(countError) throw countError;
-
-    if(count && count > 0){
-      throw new Error(
-        'This part appears in ' + count + ' order(s), so it cannot be ' +
-        'deleted without breaking that order history. Use Take down instead.'
-      );
-    }
 
     // 'photos' is a storage bucket, not a table. listings.photos holds the
     // public URLs, so the object paths have to be parsed back out of them.
@@ -1165,7 +1187,7 @@ const Admin = {
         .eq('id',id)
         .select('id');
 
-    if(error) throw error;
+    if(error) throw explainDeleteError(error,'listing');
 
     if(!data || data.length === 0){
       throw new Error(
@@ -1183,6 +1205,62 @@ const Admin = {
         .map(p => decodeURIComponent(p));
       if(paths.length) await db.storage.from('photos').remove(paths);
     }catch(_){ /* ignore */ }
+  },
+
+  // Every seller, not just the ones waiting for a decision.
+  async allSellers(status){
+
+    let q = db.from('sellers').select('*').order('created_at',{ascending:false});
+    if(status && status !== 'all') q = q.eq('status',status);
+
+    const {data,error} = await q;
+    if(error) throw error;
+    return data || [];
+  },
+
+  async sellerImpact(id){
+
+    const {count} = await db
+      .from('listings')
+      .select('id',{count:'exact',head:true})
+      .eq('seller_id',id);
+
+    return count ? [count + ' listing(s)'] : [];
+  },
+
+  // Removes the seller and, through the cascade, everything they put up.
+  async deleteSeller(id){
+
+    if(!id) throw new Error('Seller id is required.');
+
+    const {data,error} =
+      await db.from('sellers').delete().eq('id',id).select('id');
+
+    if(error) throw explainDeleteError(error,'seller');
+
+    if(!data || data.length === 0){
+      throw new Error(
+        'The database refused the delete. Run admin-delete.sql in the ' +
+        'Supabase SQL editor, and confirm your profile has is_admin = true.'
+      );
+    }
+  },
+
+  async deleteOrder(ref){
+
+    if(!ref) throw new Error('Order reference is required.');
+
+    const {data,error} =
+      await db.from('orders').delete().eq('ref',ref).select('id');
+
+    if(error) throw explainDeleteError(error,'order');
+
+    if(!data || data.length === 0){
+      throw new Error(
+        'The database refused the delete. Run admin-delete.sql in the ' +
+        'Supabase SQL editor, and confirm your profile has is_admin = true.'
+      );
+    }
   },
 
   async decideSeller(
@@ -1534,27 +1612,29 @@ const Software = {
     return data;
   },
 
+  // What goes with it. Reported before you confirm, not used to block you.
+  async impact(id){
+
+    const out = [];
+
+    const lic = await db
+      .from('licenses').select('id',{count:'exact',head:true}).eq('software_id',id);
+    if(lic.count) out.push(lic.count + ' licence(s)');
+
+    // software_orders is not in schema.sql but exists in the live database,
+    // and it is what actually blocks the delete.
+    const ord = await db
+      .from('software_orders').select('id',{count:'exact',head:true}).eq('software_id',id);
+    if(ord.count) out.push(ord.count + ' software order(s)');
+
+    return out;
+  },
+
   // Permanent removal of a published tool, plus its uploaded file.
-  // Refused once a licence has been issued — a buyer who paid must keep
-  // being able to validate the key they hold.
+  // Never refused — if Postgres blocks it, the real reason is reported.
   async adminDelete(id){
 
     if(!id) throw new Error('Software id is required.');
-
-    const {count,error:countError} =
-      await db
-        .from('licenses')
-        .select('id',{count:'exact',head:true})
-        .eq('software_id',id);
-
-    if(countError) throw countError;
-
-    if(count && count > 0){
-      throw new Error(
-        count + ' licence(s) have been issued for this tool, so deleting it ' +
-        'would break them. Use Take offline instead.'
-      );
-    }
 
     const {data:row} = await db
       .from('software').select('file_path').eq('id',id).maybeSingle();
@@ -1566,7 +1646,7 @@ const Software = {
         .eq('id',id)
         .select('id');
 
-    if(error) throw error;
+    if(error) throw explainDeleteError(error,'software');
 
     if(!data || data.length === 0){
       throw new Error(

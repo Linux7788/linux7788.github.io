@@ -1351,7 +1351,21 @@ footer .footin{
       </button>
     </div>
 
-    <div class="card" id="qSellers"></div>
+    <div id="qSellersWrap">
+      <div class="card" style="margin-bottom:10px">
+        <div class="section-head" style="margin:0 0 10px">
+          <h2 style="font-size:17px">Sellers</h2>
+          <p>Approve applications, or remove a seller and everything they listed</p>
+        </div>
+        <div class="netrow" id="sFilter">
+          <button data-sf="pending" aria-pressed="true">Pending</button>
+          <button data-sf="approved" aria-pressed="false">Approved</button>
+          <button data-sf="rejected" aria-pressed="false">Rejected</button>
+          <button data-sf="all" aria-pressed="false">All</button>
+        </div>
+      </div>
+      <div class="card" id="qSellers"></div>
+    </div>
     <div id="qListingsWrap" style="display:none">
       <div class="card" style="margin-bottom:10px">
         <div class="section-head" style="margin:0 0 10px">
@@ -2250,7 +2264,7 @@ async function loadAdminSoftware(){
           <button class="btn ghost" data-sw-edit="${s.id}" style="flex:1">Edit</button>
           <button class="btn ghost" data-sw-toggle="${s.id}" data-status="${s.status}"
             style="flex:1">${s.status==='live' ? 'Take offline' : 'Put live'}</button>
-          <button class="btn ghost" data-sw-del="${s.id}" data-name="${esc(s.name || 'this tool')}"
+          <button class="btn ghost" data-sw-del data-id="${s.id}"
             style="flex:1;color:#ff6b6b;border-color:#ff6b6b">Delete</button>
         </div>
       </div>`).join('')
@@ -2268,27 +2282,14 @@ async function loadAdminSoftware(){
       }catch(err){ toast(err.message,true); busy(e.target,false,label); }
     });
 
-    // Two taps, not a confirm() box: the second tap is the confirmation.
-    document.querySelectorAll('[data-sw-del]').forEach(b => b.onclick = async e => {
-      if(b.dataset.armed !== '1'){
-        b.dataset.armed = '1';
-        b.textContent = 'Tap again to delete';
-        setTimeout(() => {
-          if(b.dataset.armed === '1'){ b.dataset.armed = '0'; b.textContent = 'Delete'; }
-        }, 4000);
-        return;
-      }
-      try{
-        busy(e.target,true,'Delete');
-        await Software.adminDelete(b.dataset.swDel);
-        toast('Deleted');
-        if(SWF_EDIT_ID === b.dataset.swDel) clearSoftwareForm();
-        loadAdminSoftware();
-      }catch(err){
-        toast(err.message,true);
-        b.dataset.armed = '0';
-        busy(e.target,false,'Delete');
-      }
+    wireDeletes('[data-sw-del]', {
+      impact: id => Software.impact(id),
+      remove: async id => {
+        await Software.adminDelete(id);
+        if(SWF_EDIT_ID === id) clearSoftwareForm();
+      },
+      label:  'Delete',
+      after:  loadAdminSoftware
     });
 
     // Editing an existing row instead of inserting a duplicate every time.
@@ -3326,7 +3327,7 @@ document.querySelectorAll('[data-tab]').forEach(btn => {
       x.setAttribute('aria-pressed',x === btn ? 'true' : 'false')
     );
 
-    $('#qSellers').style.display =
+    $('#qSellersWrap').style.display =
       btn.dataset.tab === 'sellers' ? '' : 'none';
 
     $('#qListingsWrap').style.display =
@@ -3344,7 +3345,46 @@ document.querySelectorAll('[data-tab]').forEach(btn => {
 
 });
 
+/* ---------- one delete control, used by every admin list ----------
+   First tap looks up what else would go and shows it on the button.
+   Second tap deletes. 10 seconds to decide, because 4 was not enough
+   to read the warning on a phone. */
+function wireDeletes(selector, {impact, remove, label, after}){
+  document.querySelectorAll(selector).forEach(b => b.onclick = async e => {
+    const id = b.dataset.id;
+
+    if(b.dataset.armed !== '1'){
+      b.dataset.armed = '1';
+      b.textContent = 'Checking…';
+      let extra = [];
+      try{ extra = await impact(id); }catch(_){ }
+      if(b.dataset.armed !== '1') return;
+      b.textContent = extra.length
+        ? 'Tap again — also deletes ' + extra.join(' + ')
+        : 'Tap again to delete';
+      b.dataset.timer = String(setTimeout(() => {
+        if(b.dataset.armed === '1'){ b.dataset.armed = '0'; b.textContent = label; }
+      }, 10000));
+      return;
+    }
+
+    clearTimeout(Number(b.dataset.timer));
+    try{
+      busy(e.target,true,label);
+      await remove(id);
+      toast('Deleted');
+      after();
+    }catch(err){
+      toast(err.message,true);
+      b.dataset.armed = '0';
+      busy(e.target,false,label);
+      b.textContent = label;
+    }
+  });
+}
+
 let LISTING_FILTER = 'pending';
+let SELLER_FILTER  = 'pending';
 
 document.querySelectorAll('#lFilter [data-lf]').forEach(b => b.onclick = () => {
   LISTING_FILTER = b.dataset.lf;
@@ -3354,16 +3394,32 @@ document.querySelectorAll('#lFilter [data-lf]').forEach(b => b.onclick = () => {
   loadAdmin();
 });
 
+document.querySelectorAll('#sFilter [data-sf]').forEach(b => b.onclick = () => {
+  SELLER_FILTER = b.dataset.sf;
+  document.querySelectorAll('#sFilter [data-sf]').forEach(x =>
+    x.setAttribute('aria-pressed', x === b ? 'true' : 'false')
+  );
+  loadAdmin();
+});
+
 async function loadAdmin(){
 
   try{
 
-    const [sellers,allListings,payouts] =
+    const [allSellers,allListings,payouts] =
       await Promise.all([
-        Admin.pendingSellers(),
+        Admin.allSellers('all'),
         Admin.allListings('all'),
         Admin.payoutsDue()
       ]);
+
+    const pendingSellerCount =
+      allSellers.filter(s => s.status === 'pending').length;
+
+    const sellers =
+      SELLER_FILTER === 'all'
+        ? allSellers
+        : allSellers.filter(s => s.status === SELLER_FILTER);
 
     // The badge still counts only what needs a decision; the panel below can
     // now reach every listing, which is what was missing.
@@ -3376,7 +3432,7 @@ async function loadAdmin(){
         : allListings.filter(l => l.status === LISTING_FILTER);
 
     $('#tSellers').textContent =
-      `(${sellers.length})`;
+      `(${pendingSellerCount})`;
 
     $('#tListings').textContent =
       `(${pendingCount})`;
@@ -3408,14 +3464,21 @@ async function loadAdmin(){
 
             <div class="qacts">
 
-              <button class="btn sm"
-                data-approve-seller="${esc(s.id)}">
-                Approve
-              </button>
+              ${s.status === 'pending' ? `
+                <button class="btn sm"
+                  data-approve-seller="${esc(s.id)}">
+                  Approve
+                </button>
+
+                <button class="btn danger sm"
+                  data-reject-seller="${esc(s.id)}">
+                  Reject
+                </button>
+              ` : `<span class="flag">${esc(s.status)}</span>`}
 
               <button class="btn danger sm"
-                data-reject-seller="${esc(s.id)}">
-                Reject
+                data-seller-del data-id="${esc(s.id)}">
+                Delete
               </button>
 
             </div>
@@ -3423,7 +3486,14 @@ async function loadAdmin(){
           </div>
 
         `).join('')
-        : `<div class="empty"><b>Queue Clear</b>No seller applications.</div>`;
+        : `<div class="empty"><b>Nothing here</b>No sellers with that status.</div>`;
+
+    wireDeletes('[data-seller-del]', {
+      impact: id => Admin.sellerImpact(id),
+      remove: id => Admin.deleteSeller(id),
+      label:  'Delete',
+      after:  loadAdmin
+    });
 
     $('#qListings').innerHTML =
       listings.length
@@ -3499,12 +3569,10 @@ async function loadAdmin(){
                 </button>
               ` : ''}
 
-              ${l.status !== 'pending' ? `
-                <button class="btn danger sm"
-                  data-listing-del="${esc(l.id)}">
-                  Delete
-                </button>
-              ` : ''}
+              <button class="btn danger sm"
+                data-listing-del data-id="${esc(l.id)}">
+                Delete
+              </button>
 
             </div>
 
@@ -3523,25 +3591,11 @@ async function loadAdmin(){
       }catch(err){ toast(err.message,true); busy(e.target,false,label); }
     });
 
-    document.querySelectorAll('[data-listing-del]').forEach(b => b.onclick = async e => {
-      if(b.dataset.armed !== '1'){
-        b.dataset.armed = '1';
-        b.textContent = 'Tap again';
-        setTimeout(() => {
-          if(b.dataset.armed === '1'){ b.dataset.armed = '0'; b.textContent = 'Delete'; }
-        }, 4000);
-        return;
-      }
-      try{
-        busy(e.target,true,'Delete');
-        await Admin.deleteListing(b.dataset.listingDel);
-        toast('Deleted');
-        loadAdmin();
-      }catch(err){
-        toast(err.message,true);
-        b.dataset.armed = '0';
-        busy(e.target,false,'Delete');
-      }
+    wireDeletes('[data-listing-del]', {
+      impact: id => Admin.listingImpact(id),
+      remove: id => Admin.deleteListing(id),
+      label:  'Delete',
+      after:  loadAdmin
     });
 
     $('#qPayouts').innerHTML =
