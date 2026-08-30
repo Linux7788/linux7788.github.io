@@ -978,17 +978,25 @@ const Payments = {
       'MoMo number is required.'
     );
 
-    const provider = {
+    // The edge function does the Paystack provider-code mapping itself
+    // (MTN -> mtn, AT -> atl, Telecel -> vod). Mapping here as well sent it
+    // 'mtn' when it expected 'MTN', so every charge was refused with
+    // "Choose MTN, Telecel or AT." Send the network name, not the code.
+    const network_name = {
 
-      MTN:'mtn',
+      MTN:'MTN',
 
-      ATMoney:'atl',
+      ATMoney:'AT',
 
-      Telecel:'vod'
+      AT:'AT',
+
+      Telecel:'Telecel',
+
+      Vodafone:'Telecel'
 
     }[network];
 
-    if(!provider){
+    if(!network_name){
 
       throw new Error(
         'Unsupported MoMo network.'
@@ -1003,7 +1011,7 @@ const Payments = {
           body:{
             order_ref:String(orderRef),
             momo_phone:cleanPhone(phone),
-            momo_network:provider
+            momo_network:network_name
           }
         }
       );
@@ -1069,6 +1077,99 @@ const Admin = {
     if(error) throw error;
 
     return data || [];
+  },
+
+  // Everything the admin panel used to be blind to. decideListing() only ever
+  // touched rows with status 'pending', so once something went live there was
+  // no way back to it from the dashboard at all.
+  async allListings(status){
+
+    let q = db
+      .from('listings')
+      .select(`
+        *,
+        sellers(shop_name)
+      `)
+      .order('created_at',{ascending:false});
+
+    if(status && status !== 'all'){
+      q = q.eq('status',status);
+    }
+
+    const {data,error} = await q;
+
+    if(error) throw error;
+
+    return data || [];
+  },
+
+  // Take a live listing off the site without destroying it. Reversible.
+  async setListingStatus(id,status){
+
+    if(!id) throw new Error('Listing id is required.');
+
+    const allowed = ['live','hidden','rejected','sold_out'];
+
+    if(!allowed.includes(status)){
+      throw new Error('Unsupported listing status.');
+    }
+
+    const {data,error} =
+      await db
+        .from('listings')
+        .update({status})
+        .eq('id',id)
+        .select('id');
+
+    if(error) throw error;
+
+    // RLS refusals return success with zero rows. Never report that as done.
+    if(!data || data.length === 0){
+      throw new Error(
+        'The database refused that change. Run admin-delete.sql in the ' +
+        'Supabase SQL editor, and confirm your profile has is_admin = true.'
+      );
+    }
+  },
+
+  // Permanent. Refused when the listing is attached to an order, because
+  // deleting it would tear a hole in an order the buyer already paid for.
+  async deleteListing(id){
+
+    if(!id) throw new Error('Listing id is required.');
+
+    const {count,error:countError} =
+      await db
+        .from('order_items')
+        .select('id',{count:'exact',head:true})
+        .eq('listing_id',id);
+
+    if(countError) throw countError;
+
+    if(count && count > 0){
+      throw new Error(
+        'This part appears in ' + count + ' order(s), so it cannot be ' +
+        'deleted without breaking that order history. Use Take down instead.'
+      );
+    }
+
+    await db.from('photos').delete().eq('listing_id',id);
+
+    const {data,error} =
+      await db
+        .from('listings')
+        .delete()
+        .eq('id',id)
+        .select('id');
+
+    if(error) throw error;
+
+    if(!data || data.length === 0){
+      throw new Error(
+        'The database refused the delete. Run admin-delete.sql in the ' +
+        'Supabase SQL editor, and confirm your profile has is_admin = true.'
+      );
+    }
   },
 
   async decideSeller(
@@ -1360,19 +1461,56 @@ const Software = {
   },
 
   async adminSave(fields){
-    const row = {
-      name           : fields.name,
-      slug           : fields.slug,
-      summary        : fields.summary || null,
-      description    : fields.description || null,
-      version        : fields.version || null,
-      price_pesewas  : Math.round(Number(fields.priceGHS) * 100),
-      requires_device: fields.requiresDevice !== false,
-      max_activations: Number(fields.maxActivations) || 1,
-      status         : fields.status || 'draft'
+
+    // Only write the columns actually supplied. The old version always built
+    // a full row, so "Put live" — which passes nothing but {id, status} —
+    // sent price_pesewas: Math.round(Number(undefined) * 100) = NaN, which
+    // Postgres stored as null, and blanked summary/description/version at the
+    // same time. That is why a price you had just typed changed by itself.
+    const row = {};
+
+    const set = (col, value) => {
+      if(value !== undefined) row[col] = value;
     };
-    if(fields.filePath) row.file_path = fields.filePath;
-    if(fields.fileSize) row.file_size_bytes = fields.fileSize;
+
+    set('name',        fields.name);
+    set('slug',        fields.slug);
+    set('summary',     fields.summary);
+    set('description', fields.description);
+    set('version',     fields.version);
+    set('file_path',   fields.filePath);
+    set('file_size_bytes', fields.fileSize);
+    set('status',      fields.status);
+
+    if(fields.priceGHS !== undefined){
+      const pesewas = Math.round(Number(fields.priceGHS) * 100);
+      if(!Number.isFinite(pesewas) || pesewas < 0){
+        throw new Error('Enter a valid price in cedis.');
+      }
+      row.price_pesewas = pesewas;
+    }
+
+    if(fields.requiresDevice !== undefined){
+      row.requires_device = fields.requiresDevice !== false;
+    }
+
+    if(fields.maxActivations !== undefined){
+      row.max_activations = Number(fields.maxActivations) || 1;
+    }
+
+    if(!fields.id){
+      // Defaults belong on a brand-new row only, never on an update.
+      if(row.status === undefined)          row.status          = 'draft';
+      if(row.requires_device === undefined) row.requires_device = true;
+      if(row.max_activations === undefined) row.max_activations = 1;
+      if(row.price_pesewas === undefined){
+        throw new Error('Enter a price before saving.');
+      }
+    }
+
+    if(Object.keys(row).length === 0){
+      throw new Error('Nothing to save.');
+    }
 
     const q = fields.id
       ? db.from('software').update(row).eq('id', fields.id)
@@ -1381,6 +1519,55 @@ const Software = {
     const {data, error} = await q.select().single();
     if(error) throw error;
     return data;
+  },
+
+  // Permanent removal of a published tool, plus its uploaded file.
+  // Refused once a licence has been issued — a buyer who paid must keep
+  // being able to validate the key they hold.
+  async adminDelete(id){
+
+    if(!id) throw new Error('Software id is required.');
+
+    const {count,error:countError} =
+      await db
+        .from('licenses')
+        .select('id',{count:'exact',head:true})
+        .eq('software_id',id);
+
+    if(countError) throw countError;
+
+    if(count && count > 0){
+      throw new Error(
+        count + ' licence(s) have been issued for this tool, so deleting it ' +
+        'would break them. Use Take offline instead.'
+      );
+    }
+
+    const {data:row} = await db
+      .from('software').select('file_path').eq('id',id).maybeSingle();
+
+    const {data,error} =
+      await db
+        .from('software')
+        .delete()
+        .eq('id',id)
+        .select('id');
+
+    if(error) throw error;
+
+    if(!data || data.length === 0){
+      throw new Error(
+        'The database refused the delete. Run admin-delete.sql in the ' +
+        'Supabase SQL editor, and confirm your profile has is_admin = true.'
+      );
+    }
+
+    // Row is gone; a leftover file is untidy, not dangerous, so never let
+    // a storage error make a successful delete look like a failure.
+    if(row && row.file_path){
+      try{ await db.storage.from('software').remove([row.file_path]); }
+      catch(_){ /* ignore */ }
+    }
   },
 
   async adminUpload(file){

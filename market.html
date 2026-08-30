@@ -1352,7 +1352,22 @@ footer .footin{
     </div>
 
     <div class="card" id="qSellers"></div>
-    <div class="card" id="qListings" style="display:none"></div>
+    <div id="qListingsWrap" style="display:none">
+      <div class="card" style="margin-bottom:10px">
+        <div class="section-head" style="margin:0 0 10px">
+          <h2 style="font-size:17px">Listings</h2>
+          <p>Approve new ones, or take down / delete anything already on the site</p>
+        </div>
+        <div class="netrow" id="lFilter">
+          <button data-lf="pending" aria-pressed="true">Pending</button>
+          <button data-lf="live" aria-pressed="false">Live</button>
+          <button data-lf="hidden" aria-pressed="false">Taken down</button>
+          <button data-lf="rejected" aria-pressed="false">Rejected</button>
+          <button data-lf="all" aria-pressed="false">All</button>
+        </div>
+      </div>
+      <div class="card" id="qListings"></div>
+    </div>
     <div class="card" id="qPayouts" style="display:none"></div>
 
     <div id="qSoftware" style="display:none">
@@ -1389,10 +1404,23 @@ footer .footin{
           </select>
         </div>
 
-        <button class="btn" id="swfSave">Save Software</button>
+        <div id="swfEditing" class="notice" style="display:none;margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" id="swfSave" style="flex:1">Save Software</button>
+          <button class="btn ghost" id="swfCancel" style="display:none">Cancel edit</button>
+        </div>
       </div>
 
       <div id="swfList" style="margin-top:14px"></div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="section-head" style="margin:0 0 10px">
+          <h2 style="font-size:17px">Telegram check</h2>
+          <p>Sends one clearly-marked test alert to your bot and shows the real error if it fails</p>
+        </div>
+        <button class="btn ghost" id="tgTest">Send test alert</button>
+        <div id="tgResult" style="margin-top:10px"></div>
+      </div>
     </div>
 
   </div>
@@ -2218,9 +2246,12 @@ async function loadAdminSoftware(){
           <b>File</b>
           <span>${s.file_path ? 'uploaded' : 'none yet'}</span>
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn ghost" data-sw-edit="${s.id}" style="flex:1">Edit</button>
           <button class="btn ghost" data-sw-toggle="${s.id}" data-status="${s.status}"
             style="flex:1">${s.status==='live' ? 'Take offline' : 'Put live'}</button>
+          <button class="btn ghost" data-sw-del="${s.id}" data-name="${esc(s.name || 'this tool')}"
+            style="flex:1;color:#ff6b6b;border-color:#ff6b6b">Delete</button>
         </div>
       </div>`).join('')
       : '<div class="empty"><b>Nothing published</b>Fill the form above to add your first tool.</div>';
@@ -2230,10 +2261,54 @@ async function loadAdminSoftware(){
       const next = b.dataset.status === 'live' ? 'hidden' : 'live';
       try{
         busy(e.target,true,label);
+        // Send the status ONLY. Anything else here overwrites the row.
         await Software.adminSave({id:b.dataset.swToggle, status:next});
         toast(next === 'live' ? 'Now on sale' : 'Taken offline');
         loadAdminSoftware();
       }catch(err){ toast(err.message,true); busy(e.target,false,label); }
+    });
+
+    // Two taps, not a confirm() box: the second tap is the confirmation.
+    document.querySelectorAll('[data-sw-del]').forEach(b => b.onclick = async e => {
+      if(b.dataset.armed !== '1'){
+        b.dataset.armed = '1';
+        b.textContent = 'Tap again to delete';
+        setTimeout(() => {
+          if(b.dataset.armed === '1'){ b.dataset.armed = '0'; b.textContent = 'Delete'; }
+        }, 4000);
+        return;
+      }
+      try{
+        busy(e.target,true,'Delete');
+        await Software.adminDelete(b.dataset.swDel);
+        toast('Deleted');
+        if(SWF_EDIT_ID === b.dataset.swDel) clearSoftwareForm();
+        loadAdminSoftware();
+      }catch(err){
+        toast(err.message,true);
+        b.dataset.armed = '0';
+        busy(e.target,false,'Delete');
+      }
+    });
+
+    // Editing an existing row instead of inserting a duplicate every time.
+    document.querySelectorAll('[data-sw-edit]').forEach(b => b.onclick = () => {
+      const s = rows.find(r => String(r.id) === String(b.dataset.swEdit));
+      if(!s) return;
+      SWF_EDIT_ID = s.id;
+      $('#swfName').value    = s.name || '';
+      $('#swfSummary').value = s.summary || '';
+      $('#swfVersion').value = s.version || '';
+      $('#swfPrice').value   = s.price_pesewas == null ? '' : (s.price_pesewas / 100).toFixed(2);
+      $('#swfActs').value    = s.max_activations || 1;
+      $('#swfStatus').value  = s.status || 'draft';
+      $('#swfFile').value    = '';
+      const banner = $('#swfEditing');
+      banner.textContent = 'Editing "' + (s.name || 'untitled') + '". Saving updates this item.';
+      banner.style.display = '';
+      $('#swfCancel').style.display = '';
+      $('#swfSave').textContent = 'Update Software';
+      $('#swfName').scrollIntoView({behavior:'smooth', block:'center'});
     });
 
   }catch(err){
@@ -2245,6 +2320,61 @@ async function loadAdminSoftware(){
     save.dataset.wired = '1';
     save.onclick = saveSoftware;
   }
+  const cancel = $('#swfCancel');
+  if(cancel && !cancel.dataset.wired){
+    cancel.dataset.wired = '1';
+    cancel.onclick = clearSoftwareForm;
+  }
+
+  const tg = $('#tgTest');
+  if(tg && !tg.dataset.wired){
+    tg.dataset.wired = '1';
+    tg.onclick = testTelegram;
+  }
+}
+
+// Notification failures are swallowed everywhere else on purpose — a dead bot
+// must never stop a seller listing a part. That also means a broken bot is
+// invisible. This button is the one place the real error is shown.
+async function testTelegram(e){
+  const out = $('#tgResult');
+  out.innerHTML = '<div class="notice">Sending…</div>';
+  try{
+    busy(e.target,true,'Send test alert');
+    const {data, error} = await db.functions.invoke('notify-admin', {
+      body:{
+        type:'seller',
+        id:'00000000-0000-0000-0000-000000000000',
+        name:'TEST ALERT — ignore, no real seller',
+        location:'iLiNuX self-check',
+        payout_net:'—',
+        payout_phone:'—',
+        stock_desc:'If you can read this in Telegram, notifications work. The Approve/Reject buttons on this message do nothing.'
+      }
+    });
+    if(error) throw new Error(error.message || 'Edge function did not respond.');
+    if(data && data.error) throw new Error(data.error);
+    out.innerHTML = '<div class="notice">Sent. Check Telegram now.<br>'
+      + 'Arrived → notify-admin and your bot token/chat ID are fine.<br>'
+      + 'Nothing arrived → TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is wrong in Supabase secrets.<br>'
+      + 'Arrived but Approve does nothing → setWebhook or TELEGRAM_WEBHOOK_SECRET is the problem, not the token.</div>';
+  }catch(err){
+    out.innerHTML = '<div class="notice err">' + esc(err.message) + '</div>';
+  }finally{
+    busy(e.target,false,'Send test alert');
+  }
+}
+
+let SWF_EDIT_ID = null;
+
+function clearSoftwareForm(){
+  SWF_EDIT_ID = null;
+  ['swfName','swfSummary','swfVersion','swfPrice'].forEach(id => $('#'+id).value = '');
+  $('#swfActs').value = 1;
+  $('#swfFile').value = '';
+  $('#swfEditing').style.display = 'none';
+  $('#swfCancel').style.display  = 'none';
+  $('#swfSave').textContent = 'Save Software';
 }
 
 async function saveSoftware(e){
@@ -2259,31 +2389,39 @@ async function saveSoftware(e){
   try{
     busy(e.target,true,label);
 
-    let filePath = null, fileSize = null;
+    // undefined, not null — null would blank the stored file on an update.
+    let filePath, fileSize;
     if(file){
       const up = await Software.adminUpload(file);
       filePath = up.path; fileSize = up.size;
     }
 
-    await Software.adminSave({
+    const fields = {
       name,
-      slug: name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
-            + '-' + Math.random().toString(36).slice(2,6),
       summary: $('#swfSummary').value.trim(),
       version: $('#swfVersion').value.trim(),
       priceGHS: price,
       maxActivations: parseInt($('#swfActs').value) || 1,
       status: $('#swfStatus').value,
       filePath, fileSize
-    });
+    };
 
-    ['swfName','swfSummary','swfVersion','swfPrice'].forEach(id => $('#'+id).value = '');
-    $('#swfFile').value = '';
+    if(SWF_EDIT_ID){
+      // Keep the existing slug — changing it would break any link already shared.
+      fields.id = SWF_EDIT_ID;
+    }else{
+      fields.slug = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
+                    + '-' + Math.random().toString(36).slice(2,6);
+    }
+
+    await Software.adminSave(fields);
+
+    clearSoftwareForm();
     toast('Saved');
     loadAdminSoftware();
 
   }catch(err){ toast(err.message,true); }
-  finally{ busy(e.target,false,label); }
+  finally{ busy(e.target,false, SWF_EDIT_ID ? 'Update Software' : 'Save Software'); }
 }
 
 /* ---------- homepage: live numbers and shortcuts ---------- */
@@ -3191,7 +3329,7 @@ document.querySelectorAll('[data-tab]').forEach(btn => {
     $('#qSellers').style.display =
       btn.dataset.tab === 'sellers' ? '' : 'none';
 
-    $('#qListings').style.display =
+    $('#qListingsWrap').style.display =
       btn.dataset.tab === 'listings' ? '' : 'none';
 
     $('#qPayouts').style.display =
@@ -3206,22 +3344,42 @@ document.querySelectorAll('[data-tab]').forEach(btn => {
 
 });
 
+let LISTING_FILTER = 'pending';
+
+document.querySelectorAll('#lFilter [data-lf]').forEach(b => b.onclick = () => {
+  LISTING_FILTER = b.dataset.lf;
+  document.querySelectorAll('#lFilter [data-lf]').forEach(x =>
+    x.setAttribute('aria-pressed', x === b ? 'true' : 'false')
+  );
+  loadAdmin();
+});
+
 async function loadAdmin(){
 
   try{
 
-    const [sellers,listings,payouts] =
+    const [sellers,allListings,payouts] =
       await Promise.all([
         Admin.pendingSellers(),
-        Admin.pendingListings(),
+        Admin.allListings('all'),
         Admin.payoutsDue()
       ]);
+
+    // The badge still counts only what needs a decision; the panel below can
+    // now reach every listing, which is what was missing.
+    const pendingCount =
+      allListings.filter(l => l.status === 'pending').length;
+
+    const listings =
+      LISTING_FILTER === 'all'
+        ? allListings
+        : allListings.filter(l => l.status === LISTING_FILTER);
 
     $('#tSellers').textContent =
       `(${sellers.length})`;
 
     $('#tListings').textContent =
-      `(${listings.length})`;
+      `(${pendingCount})`;
 
     $('#tPayouts').textContent =
       `(${payouts.length})`;
@@ -3315,22 +3473,76 @@ async function loadAdmin(){
                   : ''
               }
 
-              <button class="btn sm"
-                data-approve-listing="${esc(l.id)}">
-                Approve
-              </button>
+              ${l.status === 'pending' ? `
+                <button class="btn sm"
+                  data-approve-listing="${esc(l.id)}">
+                  Approve
+                </button>
 
-              <button class="btn danger sm"
-                data-reject-listing="${esc(l.id)}">
-                Reject
-              </button>
+                <button class="btn danger sm"
+                  data-reject-listing="${esc(l.id)}">
+                  Reject
+                </button>
+              ` : ''}
+
+              ${l.status === 'live' ? `
+                <button class="btn ghost sm"
+                  data-listing-status="${esc(l.id)}" data-to="hidden">
+                  Take down
+                </button>
+              ` : ''}
+
+              ${(l.status === 'hidden' || l.status === 'rejected') ? `
+                <button class="btn ghost sm"
+                  data-listing-status="${esc(l.id)}" data-to="live">
+                  Put back live
+                </button>
+              ` : ''}
+
+              ${l.status !== 'pending' ? `
+                <button class="btn danger sm"
+                  data-listing-del="${esc(l.id)}">
+                  Delete
+                </button>
+              ` : ''}
 
             </div>
 
           </div>
 
         `).join('')
-        : `<div class="empty"><b>Queue Clear</b>No listings waiting.</div>`;
+        : `<div class="empty"><b>Nothing here</b>No listings with that status.</div>`;
+
+    document.querySelectorAll('[data-listing-status]').forEach(b => b.onclick = async e => {
+      const label = b.textContent.trim();
+      try{
+        busy(e.target,true,label);
+        await Admin.setListingStatus(b.dataset.listingStatus, b.dataset.to);
+        toast(b.dataset.to === 'hidden' ? 'Taken off the site' : 'Back on the site');
+        loadAdmin();
+      }catch(err){ toast(err.message,true); busy(e.target,false,label); }
+    });
+
+    document.querySelectorAll('[data-listing-del]').forEach(b => b.onclick = async e => {
+      if(b.dataset.armed !== '1'){
+        b.dataset.armed = '1';
+        b.textContent = 'Tap again';
+        setTimeout(() => {
+          if(b.dataset.armed === '1'){ b.dataset.armed = '0'; b.textContent = 'Delete'; }
+        }, 4000);
+        return;
+      }
+      try{
+        busy(e.target,true,'Delete');
+        await Admin.deleteListing(b.dataset.listingDel);
+        toast('Deleted');
+        loadAdmin();
+      }catch(err){
+        toast(err.message,true);
+        b.dataset.armed = '0';
+        busy(e.target,false,'Delete');
+      }
+    });
 
     $('#qPayouts').innerHTML =
       payouts.length
