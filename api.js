@@ -1153,7 +1153,10 @@ const Admin = {
       );
     }
 
-    await db.from('photos').delete().eq('listing_id',id);
+    // 'photos' is a storage bucket, not a table. listings.photos holds the
+    // public URLs, so the object paths have to be parsed back out of them.
+    const {data:row} = await db
+      .from('listings').select('photos').eq('id',id).maybeSingle();
 
     const {data,error} =
       await db
@@ -1170,6 +1173,16 @@ const Admin = {
         'Supabase SQL editor, and confirm your profile has is_admin = true.'
       );
     }
+
+    // Row is gone. Orphaned images are untidy, not dangerous, so a storage
+    // failure here must never make a successful delete look like a failure.
+    try{
+      const paths = (row?.photos || [])
+        .map(u => String(u).split('/storage/v1/object/public/photos/')[1])
+        .filter(Boolean)
+        .map(p => decodeURIComponent(p));
+      if(paths.length) await db.storage.from('photos').remove(paths);
+    }catch(_){ /* ignore */ }
   },
 
   async decideSeller(

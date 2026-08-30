@@ -25,12 +25,8 @@ for delete
 to authenticated
 using ( public.is_admin() );
 
-drop policy if exists "photos_admin_delete" on public.photos;
-create policy "photos_admin_delete"
-on public.photos
-for delete
-to authenticated
-using ( public.is_admin() );
+-- Note: "photos" is a storage bucket, not a table. Image objects are removed
+-- through the storage API by the admin panel, not by a row policy here.
 
 drop policy if exists "seller_admin_delete" on public.sellers;
 create policy "seller_admin_delete"
