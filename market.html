@@ -939,6 +939,61 @@ footer .footin{
   padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
 .spec-row:last-child{border-bottom:none}
 .spec-row b{color:var(--dim);font-weight:400}
+
+/* =========================================================
+   iLiNuX / TRIATECH-INSPIRED LANDING LAYER
+   Original iLiNuX implementation: similar information
+   architecture, not copied branding/assets.
+========================================================= */
+.ilx-services{padding:52px 0 8px}
+.ilx-section-kicker{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--green);text-transform:uppercase;margin-bottom:10px}
+.ilx-section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:30px;margin-bottom:18px}
+.ilx-section-title h2{font-family:var(--disp);font-size:36px;line-height:1;text-transform:uppercase;letter-spacing:-.02em}
+.ilx-section-title p{max-width:520px;color:var(--dim);font-size:13px}
+.ilx-service-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.ilx-service{position:relative;min-height:235px;background:var(--panel);color:var(--text);padding:23px 20px;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:9px;transition:.2s}
+.ilx-service:hover{background:var(--panel2);transform:translateY(-2px)}
+.ilx-service-code{font-family:var(--mono);font-size:9px;letter-spacing:.13em;color:var(--green)}
+.ilx-service strong{font-family:var(--disp);font-size:23px;line-height:1.05}
+.ilx-service p{color:var(--dim);font-size:12.5px;line-height:1.55}
+.ilx-service-link{margin-top:auto;font-family:var(--mono);font-size:10.5px;color:var(--text)}
+.ilx-premium{padding:72px 0 18px}
+.ilx-premium-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:55px;padding:34px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(135deg,rgba(57,230,107,.06),transparent 55%),var(--panel)}
+.ilx-premium h2{font-family:var(--disp);font-size:44px;line-height:.95;max-width:10ch;text-transform:uppercase}
+.ilx-premium h2 em{font-style:normal;color:var(--green)}
+.ilx-premium-copy{max-width:500px;color:var(--dim);margin-top:16px;font-size:13px;line-height:1.7}
+.ilx-proof-list{display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
+.ilx-proof-list>div{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:17px;background:var(--ink)}
+.ilx-proof-list b{font-family:var(--mono);font-size:10px;color:var(--green)}
+.ilx-proof-list strong{display:block;font-family:var(--disp);font-size:18px}
+.ilx-proof-list small{display:block;color:var(--dim);font-size:11.5px;margin-top:3px;line-height:1.45}
+.ilx-faq{padding:72px 0 15px}
+.ilx-faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ilx-faq details{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:0 16px}
+.ilx-faq summary{cursor:pointer;list-style:none;font-family:var(--disp);font-size:18px;padding:17px 0}
+.ilx-faq summary::-webkit-details-marker{display:none}
+.ilx-faq summary:after{content:"+";float:right;color:var(--green);font-family:var(--mono)}
+.ilx-faq details[open] summary:after{content:"−"}
+.ilx-faq details p{color:var(--dim);font-size:12.5px;line-height:1.6;padding:0 0 18px}
+.ilx-community{padding:65px 0 35px}
+.ilx-community-box{display:flex;justify-content:space-between;align-items:center;gap:30px;padding:32px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.ilx-community-box h2{font-family:var(--disp);font-size:35px;text-transform:uppercase}
+.ilx-community-box p{color:var(--dim);font-size:13px;margin-top:4px}
+.ilx-community-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ilx-footer{border-top:1px solid var(--line);padding:45px 0 20px;background:rgba(0,0,0,.12)}
+.ilx-footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:35px}
+.ilx-footer-logo{font-family:var(--disp);font-weight:800;font-size:27px}
+.ilx-footer-logo i{display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;transform:rotate(45deg);margin-right:8px}
+.ilx-footer-logo span{color:var(--green)}
+.ilx-footer-grid p{color:var(--dim);font-size:12px;max-width:380px;margin-top:8px}
+.ilx-footer-grid>div:not(:first-child){display:flex;flex-direction:column;gap:7px}
+.ilx-footer-grid>div:not(:first-child)>b{font-family:var(--mono);font-size:9px;color:var(--green);letter-spacing:.13em;text-transform:uppercase;margin-bottom:4px}
+.ilx-footer-grid a{color:var(--dim);font-size:12px;text-decoration:none}
+.ilx-footer-grid a:hover{color:var(--green)}
+.ilx-footer-bottom{display:flex;justify-content:space-between;gap:15px;border-top:1px solid var(--line);margin-top:30px;padding-top:15px;color:var(--dim);font-family:var(--mono);font-size:9px}
+@media(max-width:900px){.ilx-service-grid{grid-template-columns:repeat(2,1fr)}.ilx-premium-grid{grid-template-columns:1fr}.ilx-faq-grid{grid-template-columns:1fr}.ilx-community-box{align-items:flex-start;flex-direction:column}.ilx-footer-grid{grid-template-columns:1.5fr 1fr 1fr}}
+@media(max-width:600px){.ilx-section-title{display:block}.ilx-section-title p{margin-top:10px}.ilx-section-title h2{font-size:30px}.ilx-service-grid{grid-template-columns:1fr}.ilx-premium-grid{padding:23px}.ilx-premium h2{font-size:38px}.ilx-footer-grid{grid-template-columns:1fr 1fr}.ilx-footer-grid>div:first-child{grid-column:1/-1}.ilx-footer-bottom{flex-direction:column}}
+
 </style>
 </head>
 
@@ -973,8 +1028,7 @@ footer .footin{
       <h1>Parts you can <em>trust.</em></h1>
 
       <p>
-        A technician-first marketplace for verified mobile phone parts,
-        trusted sellers, clear grades and secure Mobile Money payments.
+        Your technician-first hub for verified mobile parts, device checks, workshop software and secure Mobile Money payments.
       </p>
 
       <div class="hero-actions">
@@ -999,6 +1053,96 @@ footer .footin{
       <div class="stat"><b>15%</b><span>Commission, flat</span></div>
     </div>
   </div>
+
+
+  <section class="ilx-services">
+    <div class="wrap">
+      <div class="ilx-section-kicker">iLiNuX / TECHNICIAN SERVICES</div>
+      <div class="ilx-section-title">
+        <h2>Everything your bench needs.</h2>
+        <p>Parts, checks and digital tools in one place — built for technicians and repair businesses in Ghana.</p>
+      </div>
+
+      <div class="ilx-service-grid">
+        <button class="ilx-service" data-jump="shop">
+          <span class="ilx-service-code">01 / MARKETPLACE</span>
+          <strong>Verified Parts</strong>
+          <p>Screens, batteries, boards and repair stock with seller and condition information.</p>
+          <span class="ilx-service-link">Shop parts →</span>
+        </button>
+
+        <button class="ilx-service" data-jump="check">
+          <span class="ilx-service-code">02 / DEVICE CHECK</span>
+          <strong>IMEI &amp; Serial Check</strong>
+          <p>Check supported device information before you buy, repair or resell.</p>
+          <span class="ilx-service-link">Run a check →</span>
+        </button>
+
+        <button class="ilx-service" data-jump="software">
+          <span class="ilx-service-code">03 / WORKSHOP TOOLS</span>
+          <strong>Software</strong>
+          <p>Digital tools and licences for technicians, with account-based access.</p>
+          <span class="ilx-service-link">View software →</span>
+        </button>
+
+        <button class="ilx-service" data-jump="sell">
+          <span class="ilx-service-code">04 / SELL WITH US</span>
+          <strong>Become a Seller</strong>
+          <p>List your stock, reach technicians and manage orders from your shop dashboard.</p>
+          <span class="ilx-service-link">Start selling →</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="ilx-premium">
+    <div class="wrap">
+      <div class="ilx-premium-grid">
+        <div>
+          <div class="ilx-section-kicker">WHY iLiNuX</div>
+          <h2>A marketplace built around <em>trust.</em></h2>
+          <p class="ilx-premium-copy">We keep the important parts of a technician marketplace visible: seller status, product condition, protected payments and clear order records.</p>
+        </div>
+        <div class="ilx-proof-list">
+          <div><b>01</b><span><strong>Reviewed sellers</strong><small>Seller applications are reviewed before marketplace access.</small></span></div>
+          <div><b>02</b><span><strong>Protected checkout</strong><small>Orders move through the payment workflow before seller payout.</small></span></div>
+          <div><b>03</b><span><strong>Technician-first</strong><small>Designed around parts, checks, software and workshop workflows.</small></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ilx-faq">
+    <div class="wrap">
+      <div class="ilx-section-kicker">SUPPORT / FAQ</div>
+      <div class="ilx-section-title">
+        <h2>Questions, answered.</h2>
+        <p>Quick answers before you create an account or place an order.</p>
+      </div>
+      <div class="ilx-faq-grid">
+        <details><summary>How do I start buying?</summary><p>Browse the Parts section, open a listing, add the item to your cart and continue through checkout. Sign in when the site asks for your account.</p></details>
+        <details><summary>How are sellers handled?</summary><p>Seller accounts and listings can be reviewed before they become visible to buyers. This helps keep marketplace stock accountable.</p></details>
+        <details><summary>What payment method is supported?</summary><p>The marketplace is configured for Paystack-based Ghana Mobile Money payments. Always test the live payment flow before accepting customer money.</p></details>
+        <details><summary>Can I sell my own parts?</summary><p>Yes. Use Become a Seller to submit your seller information and, once approved, manage your listings from My Shop.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="ilx-community">
+    <div class="wrap">
+      <div class="ilx-community-box">
+        <div>
+          <div class="ilx-section-kicker">STAY CONNECTED</div>
+          <h2>Need help with an order?</h2>
+          <p>Contact iLiNuX directly for marketplace support, order questions and technician assistance.</p>
+        </div>
+        <div class="ilx-community-actions">
+          <a class="btn" href="https://wa.me/233247141413" target="_blank" rel="noopener">WhatsApp Support</a>
+          <a class="btn ghost" href="https://t.me/iLiNuX1" target="_blank" rel="noopener">Join Telegram</a>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="wrap" style="padding-top:38px">
     <div class="docks">
@@ -1483,6 +1627,21 @@ footer .footin{
 </aside>
 
 <div class="toast" id="toast"></div>
+
+
+<footer class="ilx-footer">
+  <div class="wrap">
+    <div class="ilx-footer-grid">
+      <div>
+        <div class="ilx-footer-logo"><i></i>i<span>LiNuX</span></div>
+        <p>Technician-first marketplace for mobile parts, device checks and workshop tools in Ghana.</p>
+      </div>
+      <div><b>Marketplace</b><a href="#shop" onclick="goto('shop');return false;">Parts</a><a href="#check" onclick="goto('check');return false;">Device Check</a><a href="#software" onclick="goto('software');return false;">Software</a></div>
+      <div><b>Support</b><a href="https://wa.me/233247141413" target="_blank" rel="noopener">WhatsApp</a><a href="https://t.me/iLiNuX1" target="_blank" rel="noopener">Telegram</a><a href="https://www.tiktok.com/@iLiNuX5" target="_blank" rel="noopener">TikTok</a></div>
+    </div>
+    <div class="ilx-footer-bottom"><span>© 2026 iLiNuX. All rights reserved.</span><span>Accra, Ghana</span></div>
+  </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="api.js"></script>
