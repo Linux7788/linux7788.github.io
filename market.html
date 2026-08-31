@@ -1014,6 +1014,13 @@ footer .footin{
 /* the hero keeps its light gradient, so its ghost button needs dark ink */
 .tria-hero .btn.ghost{color:#171717;border-color:#c9d2cc}
 .tria-hero .btn.ghost:hover{background:#eef3ef;color:#0f0f0f}
+
+/* Ownership requirement on unlock services — same rule the marketplace
+   already applies to locked stock. */
+.svc-proof{display:flex;gap:7px;align-items:flex-start;font:600 12px var(--mono);
+  color:var(--amber);background:rgba(232,163,61,.09);border:1px solid rgba(232,163,61,.28);
+  border-radius:6px;padding:9px 11px;margin:0 0 16px;line-height:1.45}
+.svc-proof:before{content:"!";flex:0 0 auto;font-weight:700}
 </style>
 </head>
 
@@ -1091,7 +1098,7 @@ footer .footin{
 
   <div class="wrap">
     <section class="tria-tools">
-      <div class="tria-tools-head"><div><div class="kicker">WE ARE OFFICIAL RESELLER</div><h2>Professional Repair Tools</h2></div><p>Premium tools and software for modern phone technicians.</p></div>
+      <div class="tria-tools-head"><div><div class="kicker">TOOLS WE SUPPLY</div><h2>Professional Repair Tools</h2></div><p>Premium tools and software for modern phone technicians.</p></div>
       <div class="tria-tool-grid">
         <article class="tria-tool"><div class="tool-art borneo">PCB</div><h3>Borneo Schematic</h3><p>Complete PCB layouts, schematics and measurement data for hardware repair.</p><a href="#" onclick="return false">Learn More →</a></article>
         <article class="tria-tool"><div class="tool-art pragma">TRAIN</div><h3>PragmaFix</h3><p>Professional training, repair manuals and technician education resources.</p><a href="#" onclick="return false">Learn More →</a></article>
@@ -1107,8 +1114,8 @@ footer .footin{
     <section class="tria-services">
       <div class="tria-tools-head"><div><div class="kicker">PREMIUM GSM SERVICES</div><h2>Fast. Professional. Reliable.</h2></div></div>
       <div class="service-grid">
-        <article class="service-card"><div class="service-icon">⌁</div><h3>Samsung FRP Unlock via IMEI</h3><p>Remote IMEI-based service for supported Samsung devices with clear processing and support.</p><button class="btn" onclick="goto('sell')">Order Now</button></article>
-        <article class="service-card"><div class="service-icon">◈</div><h3>MI Cloud Removal via Server</h3><p>Server-side Xiaomi, Redmi and POCO service with step-by-step instructions.</p><button class="btn" onclick="goto('sell')">Order Now</button></article>
+        <article class="service-card"><div class="service-icon">⌁</div><h3>Samsung FRP Unlock via IMEI</h3><p>Remote IMEI-based service for supported Samsung devices with clear processing and support.</p><p class="svc-proof">Proof of ownership required before any order is processed.</p><button class="btn" onclick="goto('sell')">Order Now</button></article>
+        <article class="service-card"><div class="service-icon">◈</div><h3>MI Cloud Removal via Server</h3><p>Server-side Xiaomi, Redmi and POCO service with step-by-step instructions.</p><p class="svc-proof">Proof of ownership required before any order is processed.</p><button class="btn" onclick="goto('sell')">Order Now</button></article>
       </div>
     </section>
 
