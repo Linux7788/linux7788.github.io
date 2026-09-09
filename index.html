@@ -1779,6 +1779,14 @@ function showAuth(mode='in'){
     </div>
 
     ${mode === 'in' ? `
+      <div style="display:flex;align-items:center;gap:10px;margin:16px 0 14px">
+        <span style="flex:1;height:1px;background:var(--line)"></span>
+        <span class="hint" style="font-size:11px">or</span>
+        <span style="flex:1;height:1px;background:var(--line)"></span>
+      </div>
+      <button class="btn ghost" id="aWhatsApp" style="width:100%;margin-bottom:14px">
+        Sign in with WhatsApp
+      </button>
       <button id="aForgot"
         style="color:var(--green);font-size:13px;padding:0;background:none;border:none;cursor:pointer">
         Forgot your password?
@@ -1807,6 +1815,10 @@ function showAuth(mode='in'){
 
   $('#aSwap').onclick =
     () => showAuth(mode === 'in' ? 'up' : 'in');
+
+  if($('#aWhatsApp')){
+    $('#aWhatsApp').onclick = () => showWhatsAppLogin();
+  }
 
   if($('#aForgot')){
     $('#aForgot').onclick =
@@ -2755,6 +2767,62 @@ function showAddFunds(){
       }else{
         awaitPayment(top.ref, pay.display_text || 'Approve the request on your phone.');
       }
+    }catch(err){ toast(err.message,true); busy(e.target,false,label); }
+  };
+
+  openDrawer();
+}
+
+/* ---------- WhatsApp login ---------- */
+
+function showWhatsAppLogin(){
+  $('#dTitle').textContent = 'Sign In With WhatsApp';
+  $('#dBody').innerHTML =
+    '<p class="hint" style="margin-bottom:14px">We will send a code to your WhatsApp. No password needed.</p>' +
+    '<div class="field"><label>WhatsApp number</label>' +
+    '<input id="waPhone" inputmode="tel" placeholder="024 000 0000" autocomplete="tel">' +
+    '<p class="hint">Ghana numbers work as 024... or +233...</p></div>';
+  $('#dFoot').innerHTML =
+    '<button class="btn" id="waGo">Send Code</button>' +
+    '<button class="btn ghost" id="waBack" style="width:100%;margin-top:8px">Use email instead</button>';
+
+  $('#waBack').onclick = function(){ showAuth('in'); };
+
+  $('#waGo').onclick = async function(e){
+    const label = e.target.textContent;
+    try{
+      busy(e.target,true,label);
+      const e164 = await Auth.sendWhatsAppCode($('#waPhone').value.trim());
+      showWhatsAppCode(e164);
+    }catch(err){ toast(err.message,true); busy(e.target,false,label); }
+  };
+
+  openDrawer();
+}
+
+function showWhatsAppCode(phoneE164){
+  $('#dTitle').textContent = 'Enter Your Code';
+  $('#dBody').innerHTML =
+    '<p class="hint" style="margin-bottom:14px">We sent a code to <b>' + esc(phoneE164) + '</b> on WhatsApp.</p>' +
+    '<div class="field"><label>Code</label>' +
+    '<input id="waCode" inputmode="numeric" maxlength="8" placeholder="6 digits" autocomplete="one-time-code"></div>' +
+    '<p class="hint">Never share this code. iLiNuX will never ask you for it.</p>';
+  $('#dFoot').innerHTML =
+    '<button class="btn" id="waVerify">Sign In</button>' +
+    '<button class="btn ghost" id="waRetry" style="width:100%;margin-top:8px">Use a different number</button>';
+
+  $('#waRetry').onclick = function(){ showWhatsAppLogin(); };
+
+  $('#waVerify').onclick = async function(e){
+    const label = e.target.textContent;
+    const code = $('#waCode').value.trim();
+    if(code.replace(/[^0-9]/g,'').length < 4) return toast('Enter the code from WhatsApp',true);
+    try{
+      busy(e.target,true,label);
+      await Auth.verifyWhatsAppCode(phoneE164, code);
+      closeDrawer();
+      await boot();
+      toast('Signed in');
     }catch(err){ toast(err.message,true); busy(e.target,false,label); }
   };
 

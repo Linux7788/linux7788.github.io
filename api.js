@@ -183,6 +183,34 @@ const Auth = {
     return data.user;
   },
 
+  // --- WhatsApp login ---
+  // Supabase makes the code and hands it to our hook, which sends it
+  // over WhatsApp. Nothing here ever handles the code itself.
+
+  async sendWhatsAppCode(phone){
+    const clean = String(phone||'').replace(/[^0-9]/g,'');
+    if(clean.length < 9) throw new Error('Enter a valid phone number.');
+
+    // Ghana numbers: 024... becomes +23324...
+    const e164 = clean.startsWith('233') ? '+' + clean
+               : clean.startsWith('0')   ? '+233' + clean.slice(1)
+               : '+' + clean;
+
+    const {error} = await db.auth.signInWithOtp({ phone: e164 });
+    if(error) throw error;
+    return e164;
+  },
+
+  async verifyWhatsAppCode(phoneE164, code){
+    const {data, error} = await db.auth.verifyOtp({
+      phone: phoneE164,
+      token: String(code).replace(/[^0-9]/g,''),
+      type: 'sms'
+    });
+    if(error) throw error;
+    return data.user;
+  },
+
   async signOut(){
 
     const {error} =
