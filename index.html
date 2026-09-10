@@ -1249,11 +1249,12 @@ footer .footin{
     <div class="card">
       <div class="field">
         <label>IMEI or serial number</label>
-        <input id="dcQuery" placeholder="15 digit IMEI, or the serial from Settings"
+        <input id="dcQuery" placeholder="15 digit IMEI, or the device serial"
                autocomplete="off" spellcheck="false">
         <p class="hint">
-          On the handset, dial <b>*#06#</b> for the IMEI, or read it from
-          Settings &rarr; General &rarr; About.
+          On the handset, dial <b>*#06#</b> for the IMEI, or read the serial from
+          Settings &rarr; General &rarr; About. The IMEI gives a free result;
+          serials need the full check.
         </p>
       </div>
       <button class="btn" id="dcGo">Check Device</button>
@@ -2868,6 +2869,9 @@ function loadDeviceCheck(){
           ${row('SIM lock', d.simLock)}
           ${row('Find My', d.findMy)}
           ${row('Blacklist', d.blacklist)}
+          ${d._note ? '<p class="hint" style="margin-top:12px">' + esc(d._note) + '</p>' : ''}
+          ${d.validImei === true ? '<div class="spec-row"><b>IMEI check</b><span>Valid</span></div>' : ''}
+          ${d.validImei === false ? '<div class="spec-row"><b>IMEI check</b><span>Not a valid IMEI</span></div>' : ''}
           ${d._cached ? '<p class="hint" style="margin-top:12px">Previously checked result.</p>' : ''}
         </div>`;
 
